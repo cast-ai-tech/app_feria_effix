@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+/*
+  ============================================================
+  FERIA EFFIX — Tokens de marca (BRANDBOOK_FERIA_EFFIX_2026)
+  ------------------------------------------------------------
+  Los 3 unicos colores de marca + derivados tomados del
+  prototipo feria_effix_app_web.html (docs/).
+  Concepto: cromo / vidrio / futurista. NO festival organico.
+  ============================================================
+*/
+
+:root {
+  /* Colores oficiales de marca */
+  --brand-black: #000000;
+  --brand-white: #ffffff;
+  --brand-lav: #726e8d;
+
+  /* Derivados permitidos (tonos apagados dentro de la gama) */
+  --brand-lav-glass: rgba(114, 110, 141, 0.14);
+  --brand-muted: #9a97ab;
+  --brand-dim: #c9c7d6;
+
+  /* Superficies vidrio/cromo */
+  --glass-bg-from: rgba(255, 255, 255, 0.07);
+  --glass-bg-to: rgba(114, 110, 141, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.12);
+}
+
+/* Exponer tokens a Tailwind v4: habilita clases bg-brand-lav, text-brand-muted, etc. */
+@theme inline {
+  --color-brand-black: var(--brand-black);
+  --color-brand-white: var(--brand-white);
+  --color-brand-lav: var(--brand-lav);
+  --color-brand-lav-glass: var(--brand-lav-glass);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-dim: var(--brand-dim);
+
+  --font-sans: var(--font-montserrat), sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  color: var(--brand-white);
+  font-family: var(--font-montserrat), sans-serif;
+  background: var(--brand-black);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+  Fondo de marca (lo renderiza el componente <AppBackground/>):
+  doble degradado radial lavanda sobre negro + textura de ruido.
+*/
+.app-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 30% 0%, rgba(114, 110, 141, 0.25), transparent 55%),
+    radial-gradient(circle at 80% 100%, rgba(114, 110, 141, 0.18), transparent 50%),
+    var(--brand-black);
+}
+
+.app-noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/*
+  Efecto "sheen": brillo que recorre una superficie de vidrio/cromo.
+  Lo aplica <GlassCard sheen /> mediante la clase .glass-sheen.
+*/
+.glass-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.16),
+    transparent
+  );
+  transform: skewX(-20deg);
+  animation: sheen 6s ease-in-out infinite;
+}
+
+@keyframes sheen {
+  0% {
+    left: -60%;
+  }
+  35% {
+    left: 130%;
+  }
+  100% {
+    left: 130%;
+  }
+}
+
+/* Punto "en vivo" pulsante (badge de estado en tiempo real) */
+.live-dot {
+  animation: live-pulse 1.8s infinite;
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(230, 228, 238, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(230, 228, 238, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(230, 228, 238, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-sheen::after,
+  .live-dot {
+    animation: none;
+  }
+}
+
+/* Ocultar scrollbars (estetica app movil, como el prototipo) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

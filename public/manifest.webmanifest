@@ -1,0 +1,11 @@
+{
+  "name": "Feria Effix 2026",
+  "short_name": "Feria Effix",
+  "description": "App oficial de Feria Effix — e-commerce y marketing digital. Plaza Mayor, Medellín · 16–18 oct 2026.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "es",
+  "icons": []
+}
