@@ -1,6 +1,8 @@
+import { Handshake } from "lucide-react";
 import Button from "@/components/Button";
 import EmptyState from "@/components/EmptyState";
 import GlassCard from "@/components/GlassCard";
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import SectionTitle from "@/components/SectionTitle";
 import LockedModule from "@/components/LockedModule";
@@ -64,9 +66,15 @@ export default async function AlianzasPage() {
         backHref="/"
       />
 
+      <BannerSlot
+        placement="module_top"
+        moduleKey="alianzas"
+        edition={access.currentEdition}
+        className="mb-4"
+      />
       {offers.length === 0 ? (
         <EmptyState
-          icon="🤝"
+          icon={<Handshake className="h-6 w-6" aria-hidden />}
           title="Aún no hay ofertas"
           subtitle="Pronto publicaremos los beneficios exclusivos que negociamos con nuestros aliados para esta edición."
         />

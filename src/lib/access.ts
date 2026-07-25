@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { FALLBACK_EDITION, type EditionInfo } from "@/lib/editions";
+import { resolveTicketAccess } from "@/lib/accessRules";
 
 /**
  * Control de acceso por módulo — Modelo de acceso del Master Prompt (§5).
@@ -23,7 +25,10 @@ export type AccessInfo = {
   isAlumni: boolean;
   /** Tiene boleta activa de la edición en curso. */
   hasCurrentTicket: boolean;
+  /** Año de la edición activa (= edition.year). */
   currentEdition: number;
+  /** Edición activa completa (fechas y días) desde la tabla `editions`. */
+  edition: EditionInfo;
 };
 
 export async function getAccess(): Promise<AccessInfo> {
@@ -33,26 +38,38 @@ export async function getAccess(): Promise<AccessInfo> {
     isAdmin: false,
     isAlumni: false,
     hasCurrentTicket: false,
-    currentEdition: 2026,
+    currentEdition: FALLBACK_EDITION.year,
+    edition: FALLBACK_EDITION,
   };
 
   if (!isSupabaseConfigured()) return base;
   base.configured = true;
 
   const supabase = await createClient();
+
+  // Edición activa (tabla `editions`, Fase 12). Si la migración aún no se
+  // ejecutó, seguimos con el respaldo para no romper la app.
+  const { data: ed } = await supabase
+    .from("editions")
+    .select("year,name,starts_on,ends_on,days")
+    .eq("is_active", true)
+    .maybeSingle();
+  if (ed) {
+    base.edition = {
+      year: ed.year,
+      name: ed.name,
+      startsOn: ed.starts_on,
+      endsOn: ed.ends_on,
+      days: ed.days,
+    };
+    base.currentEdition = ed.year;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return base;
   base.user = { id: user.id, email: user.email ?? "" };
-
-  // Edición en curso (configurable desde app_config).
-  const { data: cfg } = await supabase
-    .from("app_config")
-    .select("value")
-    .eq("key", "current_edition")
-    .maybeSingle();
-  base.currentEdition = cfg?.value ? parseInt(cfg.value, 10) || 2026 : 2026;
 
   // Admin.
   const { data: profile } = await supabase
@@ -69,13 +86,9 @@ export async function getAccess(): Promise<AccessInfo> {
     .select("edition,status")
     .eq("user_id", user.id);
 
-  const list = tickets ?? [];
-  base.hasCurrentTicket = list.some(
-    (t) => t.edition === base.currentEdition && t.status === "active",
-  );
-  base.isAlumni = list.some(
-    (t) => t.status === "active" || t.status === "used",
-  );
+  const rings = resolveTicketAccess(tickets ?? [], base.currentEdition);
+  base.hasCurrentTicket = rings.hasCurrentTicket;
+  base.isAlumni = rings.isAlumni;
 
   return base;
 }

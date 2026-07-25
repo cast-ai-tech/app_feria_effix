@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import AuthHero from "@/components/AuthHero";
 import Button from "@/components/Button";
 import GlassCard from "@/components/GlassCard";
 import GoogleButton from "@/components/GoogleButton";
@@ -11,10 +12,26 @@ import SupabaseNotice from "@/components/SupabaseNotice";
 import { Field } from "@/components/Field";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { translateAuthError } from "@/lib/authErrors";
 
 export default function IngresarPage() {
+  return (
+    <Suspense>
+      <IngresarInner />
+    </Suspense>
+  );
+}
+
+function IngresarInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const configured = isSupabaseConfigured();
+
+  // Fase 21 (#9, #10): ?next= devuelve al usuario a donde iba tras el login,
+  // y ?error=auth (enviado por el callback OAuth) muestra explicación.
+  const rawNext = searchParams.get("next") ?? "";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/perfil";
+  const authCallbackError = searchParams.get("error") === "auth";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,10 +51,10 @@ export default function IngresarPage() {
 
     setLoading(false);
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
       return;
     }
-    router.push("/perfil");
+    router.push(next);
     router.refresh();
   }
 
@@ -52,11 +69,21 @@ export default function IngresarPage() {
 
   return (
     <div className="flex flex-col">
+      <AuthHero />
       <PageHeader
         title="Iniciar sesión"
         subtitle="Bienvenido de nuevo"
         backHref="/"
       />
+
+      {authCallbackError && (
+        <GlassCard className="mb-3 p-3">
+          <p className="text-[11px] font-semibold text-amber-300">
+            No pudimos completar el ingreso con Google. Intenta de nuevo o usa
+            tu correo y contraseña.
+          </p>
+        </GlassCard>
+      )}
 
       <GlassCard className="p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

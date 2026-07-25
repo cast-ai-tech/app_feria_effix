@@ -2,6 +2,7 @@ import PageHeader from "@/components/PageHeader";
 import LockedModule from "@/components/LockedModule";
 import VenueMap from "@/components/mapa/VenueMap";
 import { getAccess } from "@/lib/access";
+import { formatEditionRange } from "@/lib/editions";
 
 const TITLE = "Mapa del recinto";
 const SUBTITLE = "Plaza Mayor, Medellín · plano por zonas";
@@ -26,7 +27,7 @@ export default async function MapaPage() {
   return (
     <div className="flex flex-col">
       <PageHeader title={TITLE} subtitle={SUBTITLE} backHref="/" />
-      <VenueMap />
+      <VenueMap dateRange={formatEditionRange(a.edition)} />
     </div>
   );
 }

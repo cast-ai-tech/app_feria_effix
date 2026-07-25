@@ -6,8 +6,10 @@ import Button from "@/components/Button";
 import GlassCard from "@/components/GlassCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Field, SelectField, TextAreaField } from "@/components/Field";
+import { UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_ROLES, OTHER_ROLE_VALUE } from "@/lib/roles";
+import { clearCachedTickets } from "@/lib/ticketStore";
 
 type ProfileData = {
   full_name: string;
@@ -18,6 +20,10 @@ type ProfileData = {
   whatsapp: string;
   instagram: string;
   linkedin: string;
+  share_whatsapp: boolean;
+  share_instagram: boolean;
+  share_linkedin: boolean;
+  optout_marketing_push: boolean;
 };
 
 type RoleOption = { value: string; label: string };
@@ -60,7 +66,7 @@ export default function ProfileForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function set<K extends keyof ProfileData>(key: K, value: string) {
+  function set<K extends keyof ProfileData>(key: K, value: ProfileData[K]) {
     setData((d) => ({ ...d, [key]: value }));
   }
 
@@ -92,6 +98,10 @@ export default function ProfileForm({
         whatsapp: data.whatsapp.trim() || null,
         instagram: data.instagram.trim() || null,
         linkedin: data.linkedin.trim() || null,
+        share_whatsapp: data.share_whatsapp,
+        share_instagram: data.share_instagram,
+        share_linkedin: data.share_linkedin,
+        optout_marketing_push: data.optout_marketing_push,
       })
       .eq("id", user.id);
 
@@ -100,7 +110,7 @@ export default function ProfileForm({
       setError(error.message);
       return;
     }
-    setMessage("Perfil guardado ✅");
+    setMessage("Perfil guardado ✓");
     router.refresh();
   }
 
@@ -108,6 +118,9 @@ export default function ProfileForm({
     setSigningOut(true);
     const supabase = createClient();
     await supabase.auth.signOut();
+    // La semilla TOTP cacheada no debe sobrevivir al cierre de sesión
+    // (hallazgo #13): sin esto, el QR de la boleta queda en el dispositivo.
+    await clearCachedTickets();
     router.push("/");
     router.refresh();
   }
@@ -118,8 +131,8 @@ export default function ProfileForm({
     <form onSubmit={handleSave} className="flex flex-col gap-4">
       <GlassCard className="flex flex-col gap-4 p-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-gradient-to-br from-brand-lav to-[#2a2933] text-[15px]">
-            👤
+          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-gradient-to-br from-brand-lav to-[#2a2933]">
+            <UserRound className="h-5 w-5 text-brand-white" aria-hidden />
           </div>
           <div>
             <p className="text-[12.5px] font-extrabold text-brand-white">
@@ -214,6 +227,51 @@ export default function ProfileForm({
           onChange={(v) => set("linkedin", v)}
           placeholder="linkedin.com/in/usuario"
         />
+        <div className="flex flex-col gap-2">
+          <p className="text-[11px] font-bold text-brand-dim">
+            Qué compartes al conectar (Credencial y Comunidad)
+          </p>
+          <label className="flex items-center gap-2 text-[11px] font-semibold text-brand-white">
+            <input
+              type="checkbox"
+              checked={data.share_whatsapp}
+              onChange={(e) => set("share_whatsapp", e.target.checked)}
+            />
+            Compartir WhatsApp
+          </label>
+          <label className="flex items-center gap-2 text-[11px] font-semibold text-brand-white">
+            <input
+              type="checkbox"
+              checked={data.share_instagram}
+              onChange={(e) => set("share_instagram", e.target.checked)}
+            />
+            Compartir Instagram
+          </label>
+          <label className="flex items-center gap-2 text-[11px] font-semibold text-brand-white">
+            <input
+              type="checkbox"
+              checked={data.share_linkedin}
+              onChange={(e) => set("share_linkedin", e.target.checked)}
+            />
+            Compartir LinkedIn
+          </label>
+        </div>
+      </GlassCard>
+
+      <GlassCard className="flex flex-col gap-3 p-5">
+        <SectionTitle className="mt-0">Notificaciones</SectionTitle>
+        <label className="flex items-center gap-2 text-[11px] font-semibold text-brand-white">
+          <input
+            type="checkbox"
+            checked={!data.optout_marketing_push}
+            onChange={(e) => set("optout_marketing_push", !e.target.checked)}
+          />
+          Recibir novedades y promociones (push de marketing)
+        </label>
+        <p className="-mt-1 text-[10px] leading-relaxed text-brand-muted">
+          Los avisos operativos (cambios de agenda, conexiones, sellos) llegan
+          siempre — son parte del servicio del evento.
+        </p>
       </GlassCard>
 
       {error && (

@@ -19,7 +19,7 @@ export default async function AdminTicketsPage() {
     <div className="flex flex-col">
       <PageHeader
         title="Boletas"
-        subtitle="Importar, asignar Black, reembolsos y transferencias"
+        subtitle="Importar, asignar Black y transferencias (política: no reembolsable pero transferible)"
         backHref="/admin"
       />
       <AdminTicketsClient

@@ -1,3 +1,4 @@
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import LockedModule from "@/components/LockedModule";
 import { createClient } from "@/lib/supabase/server";
@@ -17,13 +18,16 @@ export default async function AgendaPage() {
     return <LockedModule title="Programación" reason="ticket" />;
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("talks")
-    .select(
-      "id,title,description,speaker_id,speaker_name,auditorium,day,starts_at,ends_at,status",
-    )
-    .eq("edition", a.currentEdition)
-    .order("starts_at", { ascending: true });
+  const [{ data }, { data: saved }] = await Promise.all([
+    supabase
+      .from("talks")
+      .select(
+        "id,title,description,speaker_id,speaker_name,auditorium,track,day,starts_at,ends_at,status",
+      )
+      .eq("edition", a.currentEdition)
+      .order("starts_at", { ascending: true }),
+    supabase.from("saved_talks").select("talk_id").eq("user_id", a.user.id),
+  ]);
 
   return (
     <div className="flex flex-col">
@@ -32,7 +36,17 @@ export default async function AgendaPage() {
         subtitle="Actualizada en tiempo real"
         backHref="/"
       />
-      <AgendaClient talks={(data ?? []) as Talk[]} />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="agenda"
+        edition={a.currentEdition}
+        className="mb-4"
+      />
+      <AgendaClient
+        talks={(data ?? []) as Talk[]}
+        edition={a.edition}
+        savedIds={(saved ?? []).map((s) => s.talk_id)}
+      />
     </div>
   );
 }

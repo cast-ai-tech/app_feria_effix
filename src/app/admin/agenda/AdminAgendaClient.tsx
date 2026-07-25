@@ -7,6 +7,11 @@ import GlassCard from "@/components/GlassCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Field, SelectField, TextAreaField } from "@/components/Field";
 import { cn } from "@/lib/cn";
+import {
+  editionDays,
+  editionDayLabel,
+  type EditionInfo,
+} from "@/lib/editions";
 import { createTalk, updateTalk, cancelTalk, reactivateTalk } from "./actions";
 
 export type AdminTalk = {
@@ -15,6 +20,7 @@ export type AdminTalk = {
   description: string | null;
   speaker_name: string | null;
   auditorium: string | null;
+  track: string | null;
   day: number | null;
   starts_at: string | null;
   ends_at: string | null;
@@ -23,12 +29,6 @@ export type AdminTalk = {
 };
 
 const TZ = "America/Bogota";
-
-const DAY_OPTIONS = [
-  { value: "1", label: "Día 1 · 16 oct" },
-  { value: "2", label: "Día 2 · 17 oct" },
-  { value: "3", label: "Día 3 · 18 oct" },
-];
 
 const TIME_INPUT =
   "w-full rounded-[14px] border border-white/15 bg-white/5 px-4 py-3 text-[13px] " +
@@ -50,19 +50,23 @@ type Action = (fd: FormData) => Promise<{ ok: boolean; error?: string }>;
 
 function TalkForm({
   initial,
-  currentEdition,
+  edition,
   onSubmit,
   submitLabel,
   pending,
 }: {
   initial?: AdminTalk;
-  currentEdition: number;
+  edition: EditionInfo;
   onSubmit: (fd: FormData) => void;
   submitLabel: string;
   pending: boolean;
 }) {
   const [day, setDay] = useState(String(initial?.day ?? 1));
   const [description, setDescription] = useState(initial?.description ?? "");
+  const dayOptions = editionDays(edition).map((d) => ({
+    value: String(d),
+    label: `Día ${d} · ${editionDayLabel(edition, d)}`,
+  }));
 
   return (
     <form
@@ -76,7 +80,7 @@ function TalkForm({
       <input
         type="hidden"
         name="edition"
-        defaultValue={initial?.edition ?? currentEdition}
+        defaultValue={initial?.edition ?? edition.year}
       />
 
       <Field
@@ -98,12 +102,18 @@ function TalkForm({
         defaultValue={initial?.auditorium ?? ""}
         placeholder="Auditorio 1"
       />
+      <Field
+        label="Track / tema"
+        name="track"
+        defaultValue={initial?.track ?? ""}
+        placeholder="Ej. E-commerce, Marketing, Logística"
+      />
       <SelectField
         label="Día"
         name="day"
         value={day}
         onChange={setDay}
-        options={DAY_OPTIONS}
+        options={dayOptions}
       />
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
@@ -145,10 +155,10 @@ function TalkForm({
 
 export default function AdminAgendaClient({
   talks,
-  currentEdition,
+  edition,
 }: {
   talks: AdminTalk[];
-  currentEdition: number;
+  edition: EditionInfo;
 }) {
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState<string | null>(null);
@@ -158,9 +168,9 @@ export default function AdminAgendaClient({
   function run(fn: Action, fd: FormData, onDone?: () => void) {
     startTransition(async () => {
       const res = await fn(fd);
-      if (res?.error) setNote(`⚠️ ${res.error}`);
+      if (res?.error) setNote(`Error: ${res.error}`);
       else {
-        setNote("✅ Listo");
+        setNote("Listo ✓");
         onDone?.();
       }
     });
@@ -173,7 +183,7 @@ export default function AdminAgendaClient({
         <SectionTitle className="mt-0">Nueva charla</SectionTitle>
         <TalkForm
           key={createKey}
-          currentEdition={currentEdition}
+          edition={edition}
           pending={pending}
           submitLabel="Crear charla"
           onSubmit={(fd) => {
@@ -258,7 +268,7 @@ export default function AdminAgendaClient({
                 <div className="pt-2">
                   <TalkForm
                     initial={t}
-                    currentEdition={currentEdition}
+                    edition={edition}
                     pending={pending}
                     submitLabel="Guardar cambios"
                     onSubmit={(fd) =>

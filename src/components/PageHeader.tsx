@@ -27,11 +27,9 @@ export default function PageHeader({
           ←
         </Link>
       )}
-      <h1 className="text-[19px] font-black leading-tight text-brand-white">
-        {title}
-      </h1>
+      <h1 className="text-title text-brand-white">{title}</h1>
       {subtitle && (
-        <p className="mt-1 text-[11.5px] font-medium text-brand-muted">
+        <p className="mt-1 text-[13px] font-medium text-brand-muted">
           {subtitle}
         </p>
       )}

@@ -1,3 +1,4 @@
+import { UserRound } from "lucide-react";
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import GlassCard from "@/components/GlassCard";
@@ -53,11 +54,33 @@ export default async function PonenteDetailPage({
         .maybeSingle(),
       supabase
         .from("speaker_questions")
-        .select("id,text,created_at")
+        .select("id,text,status,user_id,created_at")
         .eq("speaker_id", id)
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
+
+  // Q&A moderado (Fase 18): votos agregados + mis votos.
+  const questionIds = (questions ?? []).map((q) => q.id);
+  const [{ data: voteCounts }, { data: myVotes }] = await Promise.all([
+    questionIds.length
+      ? supabase
+          .from("question_vote_counts")
+          .select("question_id,votes")
+          .in("question_id", questionIds)
+      : Promise.resolve({ data: [] as { question_id: string; votes: number }[] }),
+    questionIds.length
+      ? supabase
+          .from("question_votes")
+          .select("question_id")
+          .eq("user_id", a.user.id)
+          .in("question_id", questionIds)
+      : Promise.resolve({ data: [] as { question_id: string }[] }),
+  ]);
+  const votesById = new Map(
+    (voteCounts ?? []).map((v) => [v.question_id, v.votes]),
+  );
+  const myVoteSet = new Set((myVotes ?? []).map((v) => v.question_id));
 
   const count = ratings?.length ?? 0;
   const average = count > 0 ? ratings!.reduce((s, r) => s + r.stars, 0) / count : 0;
@@ -82,7 +105,7 @@ export default async function PonenteDetailPage({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={speaker.photo_url} alt="" className="h-full w-full object-cover" />
             ) : (
-              "🧑‍💼"
+              <UserRound className="h-6 w-6 text-brand-white" aria-hidden />
             )}
           </div>
           <div className="min-w-0 flex-1">
@@ -105,7 +128,10 @@ export default async function PonenteDetailPage({
         </div>
 
         {speaker.bio && (
-          <p className="text-[11.5px] leading-relaxed text-brand-dim">{speaker.bio}</p>
+          /* Lectura larga → tarjeta blanca (patrón del sitio, Fase 23). */
+          <div className="card-light px-4 py-3">
+            <p className="text-[11.5px] leading-relaxed">{speaker.bio}</p>
+          </div>
         )}
 
         {socials.length > 0 && (
@@ -139,7 +165,14 @@ export default async function PonenteDetailPage({
       <SectionTitle live>Preguntas en vivo</SectionTitle>
       <QuestionsBox
         speakerId={id}
-        initialQuestions={(questions ?? []).map((q) => ({ id: q.id, text: q.text }))}
+        initialQuestions={(questions ?? []).map((q) => ({
+          id: q.id,
+          text: q.text,
+          status: q.status,
+          votes: votesById.get(q.id) ?? 0,
+          myVote: myVoteSet.has(q.id),
+          mine: q.user_id === a.user!.id,
+        }))}
       />
     </div>
   );

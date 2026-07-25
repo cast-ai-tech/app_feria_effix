@@ -1,5 +1,7 @@
 "use client";
 
+import { MailCheck } from "lucide-react";
+
 import { useState } from "react";
 import Link from "next/link";
 import Button from "@/components/Button";
@@ -9,6 +11,7 @@ import SupabaseNotice from "@/components/SupabaseNotice";
 import { Field } from "@/components/Field";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { translateAuthError } from "@/lib/authErrors";
 
 export default function RecuperarPage() {
   const configured = isSupabaseConfigured();
@@ -29,7 +32,7 @@ export default function RecuperarPage() {
 
     setLoading(false);
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
       return;
     }
     setSent(true);
@@ -54,7 +57,7 @@ export default function RecuperarPage() {
 
       {sent ? (
         <GlassCard sheen className="p-6 text-center">
-          <p className="text-[28px]">📬</p>
+          <MailCheck className="mx-auto h-8 w-8 text-brand-white" aria-hidden />
           <p className="mt-2 text-[13px] font-extrabold text-brand-white">
             Enlace enviado
           </p>

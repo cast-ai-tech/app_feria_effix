@@ -10,7 +10,7 @@ export default async function AdminAgendaPage() {
   const { data } = await supabase
     .from("talks")
     .select(
-      "id,title,description,speaker_name,auditorium,day,starts_at,ends_at,edition,status",
+      "id,title,description,speaker_name,auditorium,track,day,starts_at,ends_at,edition,status",
     )
     .order("day", { ascending: true })
     .order("starts_at", { ascending: true })
@@ -25,7 +25,7 @@ export default async function AdminAgendaPage() {
       />
       <AdminAgendaClient
         talks={(data ?? []) as AdminTalk[]}
-        currentEdition={access.currentEdition}
+        edition={access.edition}
       />
     </div>
   );

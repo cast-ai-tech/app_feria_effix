@@ -1,8 +1,11 @@
 "use client";
 
+import { MailCheck } from "lucide-react";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AuthHero from "@/components/AuthHero";
 import Button from "@/components/Button";
 import GlassCard from "@/components/GlassCard";
 import PageHeader from "@/components/PageHeader";
@@ -10,6 +13,7 @@ import SupabaseNotice from "@/components/SupabaseNotice";
 import { Field, SelectField, TextAreaField } from "@/components/Field";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { translateAuthError } from "@/lib/authErrors";
 import { DEFAULT_ROLES, OTHER_ROLE_VALUE } from "@/lib/roles";
 import GoogleButton from "@/components/GoogleButton";
 
@@ -73,7 +77,7 @@ export default function RegistroPage() {
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
       return;
     }
 
@@ -99,7 +103,7 @@ export default function RegistroPage() {
       <div className="flex flex-col">
         <PageHeader title="Revisa tu correo" backHref="/" />
         <GlassCard sheen className="p-6 text-center">
-          <p className="text-[28px]">📬</p>
+          <MailCheck className="mx-auto h-8 w-8 text-brand-white" aria-hidden />
           <p className="mt-2 text-[13px] font-extrabold text-brand-white">
             Te enviamos un enlace de confirmación
           </p>
@@ -119,6 +123,7 @@ export default function RegistroPage() {
 
   return (
     <div className="flex flex-col">
+      <AuthHero />
       <PageHeader
         title="Crear cuenta"
         subtitle="Únete a la comunidad de Feria Effix"

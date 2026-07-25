@@ -1,3 +1,5 @@
+import { Mic, UserRound } from "lucide-react";
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import GlassCard from "@/components/GlassCard";
 import ListItem from "@/components/ListItem";
@@ -79,14 +81,20 @@ export default async function PonentesPage() {
         backHref="/"
       />
 
+      <BannerSlot
+        placement="module_top"
+        moduleKey="ponentes"
+        edition={a.currentEdition}
+        className="mb-4"
+      />
       {list.length === 0 ? (
         <EmptyState
-          icon="🎤"
+          icon={<Mic className="h-6 w-6" aria-hidden />}
           title="Aún no hay ponentes publicados"
           subtitle="Muy pronto anunciaremos las charlas y quiénes las dictan."
         />
       ) : (
-        <GlassCard className="flex flex-col divide-y divide-white/[0.06] p-2">
+        <GlassCard className="flex flex-col divide-y divide-white/[0.06] p-2 md:grid md:grid-cols-2 md:gap-x-4 md:divide-y-0 xl:grid-cols-3">
           {list.map((s) => {
             const rating = avgById.get(s.id);
             return (
@@ -102,7 +110,7 @@ export default async function PonentesPage() {
                       className="h-full w-full rounded-[12px] object-cover"
                     />
                   ) : (
-                    "🧑‍💼"
+                    <UserRound className="h-5 w-5 text-brand-white" aria-hidden />
                   )
                 }
                 title={s.full_name}

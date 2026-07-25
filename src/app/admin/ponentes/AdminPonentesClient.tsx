@@ -26,6 +26,7 @@ export default function AdminPonentesClient({
 }) {
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState<string | null>(null);
+  const [bio, setBio] = useState("");
 
   function run(
     fn: (fd: FormData) => Promise<{ ok?: boolean; error?: string }>,
@@ -34,7 +35,7 @@ export default function AdminPonentesClient({
   ) {
     startTransition(async () => {
       const res = await fn(fd);
-      setNote(res?.error ? `⚠️ ${res.error}` : "✅ Listo");
+      setNote(res?.error ? `Error: ${res.error}` : "Listo ✓");
       if (res?.ok) reset?.();
     });
   }
@@ -47,7 +48,10 @@ export default function AdminPonentesClient({
           onSubmit={(e) => {
             e.preventDefault();
             const form = e.currentTarget;
-            run(createSpeaker, new FormData(form), () => form.reset());
+            run(createSpeaker, new FormData(form), () => {
+              form.reset();
+              setBio("");
+            });
           }}
           className="flex flex-col gap-3"
         >
@@ -58,10 +62,10 @@ export default function AdminPonentesClient({
             label="Fecha y hora de la charla"
             name="talk_starts_at"
             type="text"
-            placeholder="2026-10-16 10:00"
+            placeholder="AAAA-MM-DD HH:MM"
           />
           <Field label="Foto (URL)" name="photo_url" placeholder="https://…" />
-          <TextAreaField label="Bio" name="bio" value="" onChange={() => {}} placeholder="Reseña del ponente" />
+          <TextAreaField label="Bio" name="bio" value={bio} onChange={setBio} placeholder="Reseña del ponente" />
           <Field label="Instagram" name="instagram" placeholder="@usuario" />
           <Field label="LinkedIn" name="linkedin" placeholder="linkedin.com/in/…" />
           <Field label="Sitio web" name="website" placeholder="https://…" />
@@ -92,7 +96,12 @@ export default function AdminPonentesClient({
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
               <Badge>Ed. {s.edition}</Badge>
-              <form action={(fd) => run(deleteSpeaker, fd)}>
+              <form
+                action={(fd) => run(deleteSpeaker, fd)}
+                onSubmit={(e) => {
+                  if (!confirm("¿Eliminar este ponente? Esta acción no se puede deshacer.")) e.preventDefault();
+                }}
+              >
                 <input type="hidden" name="id" value={s.id} />
                 <button className="rounded-full border border-red-400/40 px-3 py-1 text-[9.5px] font-bold text-red-300">
                   Eliminar

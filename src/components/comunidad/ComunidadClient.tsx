@@ -1,5 +1,7 @@
 "use client";
 
+import { Globe } from "lucide-react";
+
 import { useMemo, useState } from "react";
 import GlassCard from "@/components/GlassCard";
 import EmptyState from "@/components/EmptyState";
@@ -106,12 +108,12 @@ export default function ComunidadClient({
 
       {filtered.length === 0 ? (
         <EmptyState
-          icon="🌐"
+          icon={<Globe className="h-6 w-6" aria-hidden />}
           title="Sin resultados"
           subtitle="Ajusta la búsqueda o los filtros."
         />
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-1 items-start gap-2 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((m) => (
             <MemberCard key={m.id} member={m} />
           ))}

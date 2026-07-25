@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import AppBackground from "@/components/AppBackground";
+import AppHeader from "@/components/AppHeader";
 import BottomNav from "@/components/BottomNav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import SplashSponsor from "@/components/SplashSponsor";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -13,9 +15,9 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Feria Effix 2026",
+  title: "Feria Effix",
   description:
-    "App oficial de Feria Effix — la feria de e-commerce y marketing digital. Plaza Mayor, Medellín · 16–18 de octubre de 2026.",
+    "App oficial de Feria Effix — la feria de e-commerce y marketing digital. Plaza Mayor, Medellín.",
   manifest: "/manifest.webmanifest",
 };
 
@@ -24,6 +26,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  // Necesario para que env(safe-area-inset-*) funcione en pantallas con
+  // notch/gestos (iOS standalone y Android edge-to-edge).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -33,12 +38,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${montserrat.variable} h-full`}>
-      <body className="min-h-full antialiased">
+      {/* suppressHydrationWarning: extensiones del navegador (ColorZilla,
+          etc.) inyectan atributos en <body> antes de hidratar y React
+          descartaba el árbol client en dev. Solo suprime avisos de
+          ATRIBUTOS en este nodo — no oculta errores reales. */}
+      <body className="min-h-full antialiased" suppressHydrationWarning>
         <ServiceWorkerRegister />
         <AppBackground />
-        {/* Shell tipo app movil: contenido centrado y limitado en desktop */}
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[440px] flex-col">
-          <main className="no-scrollbar flex-1 px-5 pt-10 pb-28">{children}</main>
+        <SplashSponsor />
+
+        {/*
+          Shell FULL-DEVICE (Fase 24): esto es una APP, no una página web.
+          La interfaz ocupa 100dvw × 100dvh en cualquier dispositivo:
+          sin marcos centrados, sin franjas vacías, sin sidebars.
+          Header de app sticky arriba + BottomNav abajo, siempre.
+        */}
+        <div className="relative z-10 flex min-h-dvh w-full flex-col">
+          <AppHeader />
+          <main className="no-scrollbar w-full flex-1 px-5 pt-5 pb-[calc(7rem+env(safe-area-inset-bottom))] md:px-8 xl:px-12">
+            {children}
+          </main>
           <BottomNav />
         </div>
       </body>

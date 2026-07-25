@@ -1,24 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-
-/** Verifica que quien llama es admin; devuelve el cliente service-role. */
-async function assertAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!profile?.is_admin) throw new Error("No autorizado (requiere admin)");
-  return createAdminClient();
-}
+import { assertAdmin } from "@/lib/adminGuard";
+import { FALLBACK_EDITION } from "@/lib/editions";
 
 type Result = { ok: boolean; error?: string };
 
@@ -32,7 +16,7 @@ export async function createOffer(formData: FormData): Promise<Result> {
   const discount = ((formData.get("discount") as string) || "").trim();
   const description = ((formData.get("description") as string) || "").trim();
   const referral_url = ((formData.get("referral_url") as string) || "").trim();
-  const edition = parseInt((formData.get("edition") as string) || "2026", 10);
+  const edition = parseInt((formData.get("edition") as string) || "", 10);
   if (!title) return { ok: false, error: "El título es obligatorio." };
 
   const { error } = await admin.from("offers").insert({
@@ -41,7 +25,7 @@ export async function createOffer(formData: FormData): Promise<Result> {
     discount: discount || null,
     description: description || null,
     referral_url: referral_url || null,
-    edition: Number.isNaN(edition) ? 2026 : edition,
+    edition: Number.isNaN(edition) ? FALLBACK_EDITION.year : edition,
     active: true,
   });
 
@@ -61,7 +45,7 @@ export async function updateOffer(formData: FormData): Promise<Result> {
   const discount = ((formData.get("discount") as string) || "").trim();
   const description = ((formData.get("description") as string) || "").trim();
   const referral_url = ((formData.get("referral_url") as string) || "").trim();
-  const edition = parseInt((formData.get("edition") as string) || "2026", 10);
+  const edition = parseInt((formData.get("edition") as string) || "", 10);
   if (!id) return { ok: false, error: "Falta el id de la oferta." };
   if (!title) return { ok: false, error: "El título es obligatorio." };
 
@@ -73,7 +57,7 @@ export async function updateOffer(formData: FormData): Promise<Result> {
       discount: discount || null,
       description: description || null,
       referral_url: referral_url || null,
-      edition: Number.isNaN(edition) ? 2026 : edition,
+      edition: Number.isNaN(edition) ? FALLBACK_EDITION.year : edition,
     })
     .eq("id", id);
 

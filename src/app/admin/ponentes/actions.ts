@@ -1,28 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-
-async function assertAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!profile?.is_admin) throw new Error("No autorizado (requiere admin)");
-  return createAdminClient();
-}
+import { assertAdmin } from "@/lib/adminGuard";
+import { FALLBACK_EDITION } from "@/lib/editions";
 
 type Result = { ok: boolean; error?: string };
 
 function readSpeaker(formData: FormData) {
-  const edition = parseInt((formData.get("edition") as string) || "2026", 10);
+  const edition = parseInt((formData.get("edition") as string) || "", 10);
   const startsRaw = ((formData.get("talk_starts_at") as string) || "").trim();
   let talk_starts_at: string | null = null;
   if (startsRaw) {
@@ -39,7 +24,7 @@ function readSpeaker(formData: FormData) {
     instagram: ((formData.get("instagram") as string) || "").trim() || null,
     linkedin: ((formData.get("linkedin") as string) || "").trim() || null,
     website: ((formData.get("website") as string) || "").trim() || null,
-    edition: Number.isNaN(edition) ? 2026 : edition,
+    edition: Number.isNaN(edition) ? FALLBACK_EDITION.year : edition,
   };
 }
 

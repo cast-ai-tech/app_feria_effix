@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import Badge from "@/components/Badge";
 import GlassCard from "@/components/GlassCard";
+import { cn } from "@/lib/cn";
 import { computeTotp, qrPayload } from "@/lib/totp";
 import {
   cacheTickets,
@@ -27,23 +28,27 @@ export default function TicketQR({
 }: {
   serverTickets: CachedTicket[];
 }) {
-  // Datos a mostrar: los del servidor si llegaron; si no, el cache local.
-  const [tickets, setTickets] = useState<CachedTicket[]>(serverTickets);
-  const [fromCache, setFromCache] = useState(false);
+  // Cache local: solo se consulta tras montar (evita mismatch de hidratación,
+  // porque en SSR no hay localStorage).
+  const [cachedTickets, setCachedTickets] = useState<CachedTicket[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
     if (serverTickets.length > 0) {
-      cacheTickets(serverTickets); // descarga con conexión → guarda offline
-      setTickets(serverTickets);
-      setFromCache(false);
-    } else {
-      const cached = loadCachedTickets();
-      if (cached.length > 0) {
-        setTickets(cached);
-        setFromCache(true);
-      }
+      void cacheTickets(serverTickets); // descarga con conexión → guarda offline
+      return;
     }
+    void loadCachedTickets().then((cached) => {
+      if (!cancelled && cached.length > 0) setCachedTickets(cached);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [serverTickets]);
+
+  // Datos a mostrar: los del servidor si llegaron; si no, el cache local.
+  const fromCache = serverTickets.length === 0 && cachedTickets.length > 0;
+  const tickets = serverTickets.length > 0 ? serverTickets : cachedTickets;
 
   const activeTickets = tickets.filter((t) => t.status === "active");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -80,12 +85,12 @@ export default function TicketQR({
       ) : (
         <GlassCard className="p-6 text-center">
           <p className="text-[13px] font-extrabold text-brand-white">
-            Boleta {STATUS_LABEL[current.status].toLowerCase()}
+            Escarapela {STATUS_LABEL[current.status].toLowerCase()}
           </p>
           <p className="mt-1 text-[11px] text-brand-muted">
             {current.status === "used"
-              ? "Esta boleta ya fue usada para ingresar."
-              : "Esta boleta fue cancelada o reembolsada."}
+              ? "Esta escarapela ya fue usada para ingresar."
+              : "Esta escarapela fue cancelada o transferida. ¿Dudas? Escríbenos por WhatsApp."}
           </p>
         </GlassCard>
       )}
@@ -158,10 +163,28 @@ function ActiveTicket({
 
   const showOffline = !online || fromCache;
 
+  // Código de color por tier del sitio (Fase 23): Black plata/cromo,
+  // VIP oro, General/Pasaporte lavanda. Metálicos → texto negro.
+  const metallic = ticket.tierSlug === "black" || ticket.tierSlug === "vip";
+  const tierCard =
+    ticket.tierSlug === "black"
+      ? "tier-black-bg tier-shine border-transparent"
+      : ticket.tierSlug === "vip"
+        ? "tier-vip-bg tier-shine border-transparent"
+        : "border-brand-lav/60 bg-brand-lav/20";
+
   return (
-    <GlassCard sheen className="flex flex-col items-center p-6 text-center">
-      <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-brand-dim">
-        Feria Effix {ticket.edition} · {ticket.tierLabel}
+    <GlassCard
+      sheen={!metallic}
+      className={cn("flex flex-col items-center p-6 text-center", tierCard)}
+    >
+      <p
+        className={cn(
+          "text-[10px] font-extrabold uppercase tracking-[1.5px]",
+          metallic ? "text-black/60" : "text-brand-dim",
+        )}
+      >
+        Feria Effix {ticket.edition} · Escarapela {ticket.tierLabel}
       </p>
 
       {/* Caja blanca del QR (fiel al prototipo) */}
@@ -184,27 +207,66 @@ function ActiveTicket({
         CLAVE DINÁMICA · {code || "········"}
       </div>
 
-      <p className="text-[11px] font-bold text-brand-dim">
+      <p
+        className={cn(
+          "text-[11px] font-bold",
+          metallic ? "text-black/70" : "text-brand-dim",
+        )}
+      >
         Se renueva en {mmss}
       </p>
 
       {/* Barra de progreso de la rotación */}
-      <div className="mt-2 h-1 w-32 overflow-hidden rounded-full bg-white/10">
+      <div
+        className={cn(
+          "mt-2 h-1 w-32 overflow-hidden rounded-full",
+          metallic ? "bg-black/20" : "bg-white/10",
+        )}
+      >
         <div
-          className="h-full rounded-full bg-brand-dim transition-[width] duration-1000 ease-linear"
+          className={cn(
+            "h-full rounded-full transition-[width] duration-1000 ease-linear",
+            metallic ? "bg-black/60" : "bg-brand-dim",
+          )}
           style={{ width: `${(remaining / ticket.step) * 100}%` }}
         />
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <Badge dot={showOffline}>
-          {showOffline ? "Modo offline activo" : "En línea"}
-        </Badge>
-        <Badge>Personal e intransferible</Badge>
+        {metallic ? (
+          <>
+            <span className="rounded-full border border-black/40 px-2.5 py-1 text-[9.5px] font-extrabold text-black">
+              {showOffline ? "Modo offline activo" : "En línea"}
+            </span>
+            <span className="rounded-full border border-black/40 px-2.5 py-1 text-[9.5px] font-extrabold text-black">
+              Personal · transferible solo vía equipo Effix
+            </span>
+          </>
+        ) : (
+          <>
+            <Badge dot={showOffline}>
+              {showOffline ? "Modo offline activo" : "En línea"}
+            </Badge>
+            <Badge>Personal · transferible solo vía equipo Effix</Badge>
+          </>
+        )}
       </div>
 
-      <p className="mt-3 text-[10px] leading-relaxed text-brand-muted">
-        Titular: <span className="font-bold text-brand-white">{ticket.holder}</span>
+      <p
+        className={cn(
+          "mt-3 text-[10px] leading-relaxed",
+          metallic ? "text-black/70" : "text-brand-muted",
+        )}
+      >
+        Titular:{" "}
+        <span
+          className={cn(
+            "font-bold",
+            metallic ? "text-black" : "text-brand-white",
+          )}
+        >
+          {ticket.holder}
+        </span>
         <br />
         El código cambia cada {ticket.step} segundos: una captura de pantalla no
         sirve para ingresar.

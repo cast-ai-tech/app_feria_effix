@@ -74,3 +74,39 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+/* ── Web Push (Fase 16) ─────────────────────────────────────────────── */
+
+self.addEventListener("push", (event) => {
+  let payload = { title: "Feria Effix", body: "", url: "/notificaciones" };
+  try {
+    payload = { ...payload, ...event.data.json() };
+  } catch {
+    /* payload no-JSON: se muestra el título por defecto */
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body || undefined,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: payload.url || "/notificaciones" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((all) => {
+      for (const client of all) {
+        if ("focus" in client) {
+          client.focus();
+          if ("navigate" in client) client.navigate(url);
+          return;
+        }
+      }
+      return clients.openWindow(url);
+    }),
+  );
+});

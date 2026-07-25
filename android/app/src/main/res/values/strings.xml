@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Feria Effix</string>
+    <string name="title_activity_main">Feria Effix</string>
+    <string name="package_name">com.feriaeffix.app</string>
+    <string name="custom_url_scheme">com.feriaeffix.app</string>
+</resources>

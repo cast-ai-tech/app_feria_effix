@@ -98,7 +98,7 @@ export default function StorybookPage() {
       <SectionTitle>Badges de estado</SectionTitle>
       <GlassCard className="flex flex-wrap items-center gap-2 p-4">
         <Badge>Acceso permanente</Badge>
-        <Badge>🔓 Desbloqueado de por vida</Badge>
+        <Badge>Desbloqueado de por vida</Badge>
         <Badge>Modo offline activo</Badge>
         <Badge dot>En vivo ahora</Badge>
       </GlassCard>

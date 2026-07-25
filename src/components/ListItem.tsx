@@ -35,11 +35,11 @@ export default function ListItem({
         </div>
       )}
       <div className="min-w-0">
-        <div className="truncate text-[12.5px] font-extrabold text-brand-white">
+        <div className="truncate text-[14px] font-extrabold text-brand-white">
           {title}
         </div>
         {subtitle && (
-          <div className="mt-0.5 text-[10.5px] font-medium text-brand-muted">
+          <div className="mt-0.5 text-[12px] font-medium text-brand-muted">
             {subtitle}
           </div>
         )}

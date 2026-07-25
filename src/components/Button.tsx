@@ -1,7 +1,22 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
-type Variant = "solid" | "ghost";
+/**
+ * Variantes (Fase 23 suma las de marca del sitio real, sin romper usos):
+ * - solid / ghost: las históricas de la app.
+ * - glow: CTA PRIMARIO — pill blanco con anillo neón cian animado
+ *   (patrón del header de feriaeffix.com).
+ * - tier-black | tier-vip | tier-general: degradado metálico del tier
+ *   (plata/oro/lavanda), texto negro Montserrat Bold — solo para acciones
+ *   ligadas a un tier (comprar/solicitar/mostrar escarapela).
+ */
+type Variant =
+  | "solid"
+  | "ghost"
+  | "glow"
+  | "tier-black"
+  | "tier-vip"
+  | "tier-general";
 type Size = "sm" | "md";
 
 type ButtonProps = {
@@ -22,6 +37,10 @@ type ButtonProps = {
 const VARIANTS: Record<Variant, string> = {
   solid: "bg-brand-white text-black border border-transparent",
   ghost: "bg-transparent text-brand-white border border-white/35",
+  glow: "bg-brand-white text-black border border-transparent btn-glow",
+  "tier-black": "tier-black-bg text-black border border-transparent",
+  "tier-vip": "tier-vip-bg text-black border border-transparent",
+  "tier-general": "tier-general-bg text-black border border-transparent",
 };
 
 const SIZES: Record<Size, string> = {

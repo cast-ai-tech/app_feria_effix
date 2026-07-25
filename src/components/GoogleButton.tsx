@@ -25,7 +25,13 @@ export default function GoogleButton({ label }: { label: string }) {
   return (
     <div>
       <Button variant="ghost" fullWidth size="md" onClick={handleGoogle}>
-        <span className="mr-2">🇬</span> {label}
+        <span
+          aria-hidden
+          className="mr-2 inline-flex h-4 w-4 items-center justify-center rounded-full bg-brand-white text-[10px] font-black text-black"
+        >
+          G
+        </span>
+        {label}
       </Button>
       {error && (
         <p className="mt-2 text-center text-[10.5px] text-red-300">{error}</p>

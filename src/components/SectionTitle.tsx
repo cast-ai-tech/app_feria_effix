@@ -19,7 +19,7 @@ export default function SectionTitle({
   return (
     <p
       className={cn(
-        "mt-4 mb-2.5 flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-[1.3px] text-brand-dim",
+        "mt-4 mb-2.5 flex items-center gap-1.5 text-[12px] font-extrabold uppercase tracking-[1.3px] text-brand-dim",
         className,
       )}
     >

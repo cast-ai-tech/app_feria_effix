@@ -4,7 +4,7 @@
  * Se usa para la "clave dinámica" de la boleta:
  *   - El servidor genera un `secret` (base32) único por boleta y lo guarda.
  *   - El dispositivo del dueño descarga ese secret una vez (con conexión) y
- *     lo guarda localmente (IndexedDB, ver ticketStore.ts).
+ *     lo guarda localmente (adaptador de storage, ver ticketStore.ts).
  *   - A partir de ahí el código rotativo se calcula EN EL DISPOSITIVO con la
  *     hora del sistema, sin necesitar internet. Una captura de pantalla
  *     caduca a los `step` segundos, así que no sirve para falsificar acceso.

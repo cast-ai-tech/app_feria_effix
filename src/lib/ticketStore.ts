@@ -5,9 +5,12 @@
  * (incluida la semilla TOTP). Si luego el dispositivo pierde internet, el QR
  * se sigue generando desde estos datos con la hora del sistema (ver totp.ts).
  *
- * Se usa localStorage (permitido por el spec de la Fase 3): es síncrono,
- * persiste sin red y basta para un dato tan pequeño. Se limpia al cerrar sesión.
+ * Fase 13: pasa por el adaptador de plataforma (src/lib/platform/storage.ts)
+ * — hoy localStorage; en app nativa será @capacitor/preferences sin tocar
+ * este módulo ni la UI. Se limpia al cerrar sesión.
  */
+
+import { storage } from "@/lib/platform/storage";
 
 const STORAGE_KEY = "efx.tickets.v1";
 
@@ -16,7 +19,7 @@ export type CachedTicket = {
   secret: string; // semilla TOTP (base32)
   step: number; // segundos por rotación
   digits: number; // longitud del código
-  tierSlug: string; // 'general' | 'vip' | 'black'
+  tierSlug: string; // 'general' | 'vip' | 'black' | 'diaria'
   tierLabel: string; // "VIP", "General"...
   holder: string;
   edition: number;
@@ -24,42 +27,24 @@ export type CachedTicket = {
   cachedAt: number;
 };
 
-function read(): CachedTicket[] {
-  if (typeof window === "undefined") return [];
+/** Guarda/actualiza el paquete de boletas descargado con conexión. */
+export async function cacheTickets(tickets: CachedTicket[]): Promise<void> {
+  const stamped = tickets.map((t) => ({ ...t, cachedAt: Date.now() }));
+  await storage.set(STORAGE_KEY, JSON.stringify(stamped));
+}
+
+/** Lee las boletas cacheadas (para funcionar sin red). */
+export async function loadCachedTickets(): Promise<CachedTicket[]> {
+  const raw = await storage.get(STORAGE_KEY);
+  if (!raw) return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as CachedTicket[]) : [];
+    return JSON.parse(raw) as CachedTicket[];
   } catch {
     return [];
   }
 }
 
-function write(list: CachedTicket[]) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    // Cuota llena o modo privado: la app sigue funcionando online.
-  }
-}
-
-/** Guarda/actualiza el paquete de boletas descargado con conexión. */
-export function cacheTickets(tickets: CachedTicket[]) {
-  const stamped = tickets.map((t) => ({ ...t, cachedAt: Date.now() }));
-  write(stamped);
-}
-
-/** Lee las boletas cacheadas (para funcionar sin red). */
-export function loadCachedTickets(): CachedTicket[] {
-  return read();
-}
-
 /** Borra el cache (al cerrar sesión). */
-export function clearCachedTickets() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* no-op */
-  }
+export async function clearCachedTickets(): Promise<void> {
+  await storage.remove(STORAGE_KEY);
 }

@@ -1,204 +1,225 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { GraduationCap, LockOpen, Play } from "lucide-react";
+
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Badge from "@/components/Badge";
 import EmptyState from "@/components/EmptyState";
 import FilterChip from "@/components/FilterChip";
 import GlassCard from "@/components/GlassCard";
 import SectionTitle from "@/components/SectionTitle";
-import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/cn";
+import RecordingCard, {
+  type RecordingView,
+} from "@/components/academia/RecordingCard";
 
-export type Recording = {
+export type ContinueItem = {
   id: string;
   title: string;
   speaker_name: string | null;
-  description: string | null;
   video_url: string | null;
-  edition: number;
-  /** Promedio de estrellas (0 si nadie ha calificado). */
-  avg: number;
-  /** Número de calificaciones. */
-  count: number;
-  /** Estrellas que dio el usuario actual (0 = aún no ha calificado). */
-  myStars: number;
 };
 
-const EDITIONS = [2026, 2025, 2024] as const;
+export type CollectionView = {
+  id: string;
+  name: string;
+  description: string | null;
+  itemIds: string[];
+};
 
-/** Fila de estrellas interactiva — calificación 1-5 del usuario. */
-function StarRating({
-  recordingId,
-  myStars,
-  avg,
-  count,
-}: {
-  recordingId: string;
-  myStars: number;
-  avg: number;
-  count: number;
-}) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [hover, setHover] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+const INPUT =
+  "w-full rounded-[14px] border border-white/15 bg-white/5 px-4 py-3 text-[13px] " +
+  "text-brand-white placeholder:text-brand-muted outline-none " +
+  "focus:border-brand-lav focus:ring-1 focus:ring-brand-lav/60";
 
-  function rate(stars: number) {
-    setError(null);
-    startTransition(async () => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setError("Inicia sesión para calificar.");
-        return;
-      }
-      const { error } = await supabase.from("recording_ratings").upsert(
-        { recording_id: recordingId, user_id: user.id, stars },
-        { onConflict: "recording_id,user_id" },
-      );
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      router.refresh();
-    });
-  }
+/**
+ * Covers por edición: memorias visuales OFICIALES del sitio feriaeffix.com
+ * (assets estáticos de la app). Ediciones sin foto (p. ej. la vigente) no
+ * muestran cover.
+ */
+const EDITION_COVERS: Record<number, string> = {
+  2021: "/academia/edicion-2021.webp",
+  2022: "/academia/edicion-2022.webp",
+  2023: "/academia/edicion-2023.webp",
+  2024: "/academia/edicion-2024.webp",
+  2025: "/academia/edicion-2025.webp",
+};
 
-  const shown = hover || myStars;
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <div
-          className="flex items-center gap-0.5"
-          onMouseLeave={() => setHover(0)}
-        >
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              disabled={pending}
-              aria-label={`Calificar con ${n} ${n === 1 ? "estrella" : "estrellas"}`}
-              aria-pressed={myStars === n}
-              onMouseEnter={() => setHover(n)}
-              onFocus={() => setHover(n)}
-              onClick={() => rate(n)}
-              className={cn(
-                "text-[15px] leading-none transition-transform active:scale-90 disabled:opacity-50",
-                n <= shown ? "text-brand-white" : "text-brand-dim/40",
-              )}
-            >
-              {n <= shown ? "★" : "☆"}
-            </button>
-          ))}
-        </div>
-        <span className="text-[9.5px] font-medium text-brand-muted">
-          {count > 0
-            ? `${avg.toFixed(1)} · ${count} ${count === 1 ? "voto" : "votos"}`
-            : "Sé el primero en calificar"}
-        </span>
-      </div>
-      {myStars > 0 && !error && (
-        <span className="text-[9px] text-brand-dim">
-          Tu calificación: {myStars}/5 · toca para cambiarla
-        </span>
-      )}
-      {error && <span className="text-[9px] text-red-300">{error}</span>}
-    </div>
-  );
-}
-
+/**
+ * Academia 2.0 (Fase 20) — vista completa para alumni/admin.
+ * La edición se filtra SERVER-SIDE (?edicion=YYYY, hallazgo #29); los chips
+ * navegan. El buscador filtra client-side sobre lo cargado.
+ */
 export default function AcademiaClient({
   recordings,
+  editions,
+  selectedEdition,
+  collections,
+  continueWatching,
 }: {
-  recordings: Recording[];
+  recordings: RecordingView[];
+  /** Años disponibles (tabla `editions`), de más reciente a más antiguo. */
+  editions: number[];
+  selectedEdition: number;
+  collections: CollectionView[];
+  continueWatching: ContinueItem[];
 }) {
-  const [edition, setEdition] = useState<number>(EDITIONS[0]);
+  const router = useRouter();
+  const [query, setQuery] = useState("");
 
-  const shown = useMemo(
-    () => recordings.filter((r) => r.edition === edition),
-    [recordings, edition],
+  const byId = useMemo(
+    () => new Map(recordings.map((r) => [r.id, r])),
+    [recordings],
   );
+
+  const searched = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return recordings;
+    // Busca por título, ponente, descripción y tema (nombre de colección).
+    const collectionHits = new Set(
+      collections
+        .filter((c) => c.name.toLowerCase().includes(q))
+        .flatMap((c) => c.itemIds),
+    );
+    return recordings.filter(
+      (r) =>
+        collectionHits.has(r.id) ||
+        [r.title, r.speaker_name, r.description]
+          .filter(Boolean)
+          .some((v) => v!.toLowerCase().includes(q)),
+    );
+  }, [recordings, collections, query]);
+
+  /** Items de una colección presentes en la edición cargada, por rating. */
+  function collectionRecordings(c: CollectionView): RecordingView[] {
+    return c.itemIds
+      .map((id) => byId.get(id))
+      .filter((r): r is RecordingView => !!r)
+      .sort((a, b) => b.avg - a.avg);
+  }
+
+  const visibleCollections = collections
+    .map((c) => ({ meta: c, items: collectionRecordings(c) }))
+    .filter((c) => c.items.length > 0);
+
+  const searching = query.trim().length > 0;
 
   return (
     <div className="flex flex-col">
       <div className="mb-2 flex justify-center">
-        <Badge>🔓 Acceso permanente</Badge>
+        <Badge><LockOpen className="mr-1 inline h-3 w-3" aria-hidden />Acceso permanente</Badge>
       </div>
 
-      {/* Chips de edición */}
-      <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {EDITIONS.map((e) => (
+      {/* Chips de edición → navegación server-side */}
+      <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
+        {editions.map((e) => (
           <FilterChip
             key={e}
-            active={edition === e}
-            onClick={() => setEdition(e)}
+            active={selectedEdition === e}
+            onClick={() => router.push(`/academia?edicion=${e}`)}
           >
             {e}
           </FilterChip>
         ))}
       </div>
 
+      {/* Cover de la edición seleccionada (foto real de esa feria) */}
+      {EDITION_COVERS[selectedEdition] && (
+        <div className="relative mb-3 aspect-[16/6] w-full overflow-hidden rounded-[18px] border border-white/10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={EDITION_COVERS[selectedEdition]}
+            alt={`Feria Effix ${selectedEdition}`}
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+          <p className="absolute bottom-2.5 left-3.5 text-[13px] font-black tracking-wide text-brand-white">
+            Así se vivió la edición {selectedEdition}
+          </p>
+        </div>
+      )}
+
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className={INPUT + " mb-2"}
+        placeholder="Buscar por título, ponente o tema…"
+      />
+
+      {/* Continuar viendo (cross-edición) */}
+      {!searching && continueWatching.length > 0 && (
+        <>
+          <SectionTitle>Continuar viendo</SectionTitle>
+          <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
+            {continueWatching.map((c) => (
+              <a
+                key={c.id}
+                href={c.video_url ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-[180px] flex-shrink-0"
+              >
+                <GlassCard className="flex flex-col gap-1 p-3">
+                  <Play className="h-4 w-4 text-brand-white" aria-hidden />
+                  <p className="line-clamp-2 text-[11px] font-extrabold leading-snug text-brand-white">
+                    {c.title}
+                  </p>
+                  {c.speaker_name && (
+                    <p className="truncate text-[9.5px] text-brand-muted">
+                      {c.speaker_name}
+                    </p>
+                  )}
+                </GlassCard>
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Colecciones curadas, ordenadas por calificación */}
+      {!searching &&
+        visibleCollections.map(({ meta, items }) => (
+          <div key={meta.id} className="mb-1">
+            <SectionTitle>{meta.name}</SectionTitle>
+            {meta.description && (
+              <p className="-mt-1 mb-2 text-[10.5px] text-brand-muted">
+                {meta.description}
+              </p>
+            )}
+            <div className="grid grid-cols-1 items-start gap-2.5 md:grid-cols-2">
+              {items.map((r) => (
+                <RecordingCard key={`${meta.id}-${r.id}`} recording={r} />
+              ))}
+            </div>
+          </div>
+        ))}
+
       <SectionTitle>
-        Ponencias {edition} ({shown.length})
+        {searching
+          ? `Resultados (${searched.length})`
+          : `Ponencias ${selectedEdition} (${recordings.length})`}
       </SectionTitle>
 
-      {shown.length === 0 ? (
+      {searched.length === 0 ? (
         <div className="mt-1">
           <EmptyState
-            icon="🎓"
-            title={`Sin grabaciones de ${edition}`}
-            subtitle="Aún no hay ponencias publicadas para esta edición. Vuelve pronto: seguimos subiendo contenido."
+            icon={<GraduationCap className="h-6 w-6" aria-hidden />}
+            title={
+              searching
+                ? "Sin resultados"
+                : `Sin grabaciones de ${selectedEdition}`
+            }
+            subtitle={
+              searching
+                ? "Prueba con otro título, ponente o tema."
+                : "Aún no hay ponencias publicadas para esta edición. Vuelve pronto: seguimos subiendo contenido."
+            }
           />
         </div>
       ) : (
-        <div className="mt-1 flex flex-col gap-2.5">
-          {shown.map((r) => (
-            <GlassCard key={r.id} className="flex flex-col gap-3 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] bg-gradient-to-br from-brand-lav to-[#23222b] text-[16px]">
-                  ▶️
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[12.5px] font-extrabold leading-snug text-brand-white">
-                    {r.title}
-                  </p>
-                  {r.speaker_name && (
-                    <p className="mt-0.5 text-[10.5px] font-medium text-brand-muted">
-                      {r.speaker_name}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {r.description && (
-                <p className="text-[10.5px] leading-relaxed text-brand-muted">
-                  {r.description}
-                </p>
-              )}
-
-              <div className="flex items-center justify-between gap-3">
-                <StarRating
-                  recordingId={r.id}
-                  myStars={r.myStars}
-                  avg={r.avg}
-                  count={r.count}
-                />
-                {r.video_url && (
-                  <a
-                    href={r.video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex flex-shrink-0 items-center justify-center rounded-full border border-white/35 bg-transparent px-[13px] py-[7px] text-[10px] font-extrabold text-brand-white transition-transform active:scale-95"
-                  >
-                    Ver video →
-                  </a>
-                )}
-              </div>
-            </GlassCard>
+        <div className="mt-1 grid grid-cols-1 items-start gap-2.5 md:grid-cols-2">
+          {searched.map((r) => (
+            <RecordingCard key={r.id} recording={r} />
           ))}
         </div>
       )}

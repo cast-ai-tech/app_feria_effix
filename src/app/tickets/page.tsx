@@ -1,3 +1,4 @@
+import { GraduationCap, MapPin } from "lucide-react";
 import { redirect } from "next/navigation";
 import Badge from "@/components/Badge";
 import GlassCard from "@/components/GlassCard";
@@ -9,12 +10,13 @@ import NoTicket from "@/components/tickets/NoTicket";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { CachedTicket } from "@/lib/ticketStore";
+import { FALLBACK_EDITION, formatEditionRange } from "@/lib/editions";
 
 export default async function TicketsPage() {
   if (!isSupabaseConfigured()) {
     return (
       <div className="flex flex-col">
-        <PageHeader title="Tu ticket" backHref="/" />
+        <PageHeader title="Tu escarapela" backHref="/" />
         <SupabaseNotice />
       </div>
     );
@@ -29,25 +31,40 @@ export default async function TicketsPage() {
   // Auto-vinculación: reclama boletas importadas cuyo correo coincide.
   await supabase.rpc("claim_my_tickets");
 
-  const [{ data: tickets }, { data: types }, { data: cfg }] = await Promise.all([
-    supabase
-      .from("tickets")
-      .select(
-        "id,secret,totp_step,totp_digits,ticket_type,holder_name,edition,status",
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
-    supabase.from("ticket_types").select("slug,label"),
-    supabase
-      .from("app_config")
-      .select("value")
-      .eq("key", "black_whatsapp_url")
-      .maybeSingle(),
-  ]);
+  const [{ data: tickets }, { data: types }, { data: cfg }, { data: ed }] =
+    await Promise.all([
+      supabase
+        .from("tickets")
+        .select(
+          "id,secret,totp_step,totp_digits,ticket_type,holder_name,edition,status",
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase.from("ticket_types").select("slug,label"),
+      supabase
+        .from("app_config")
+        .select("value")
+        .eq("key", "black_whatsapp_url")
+        .maybeSingle(),
+      supabase
+        .from("editions")
+        .select("year,name,starts_on,ends_on,days")
+        .eq("is_active", true)
+        .maybeSingle(),
+    ]);
 
   const label = (slug: string) =>
     types?.find((t) => t.slug === slug)?.label ?? slug;
   const blackUrl = cfg?.value ?? "https://wa.me/573000000000";
+  const edition = ed
+    ? {
+        year: ed.year,
+        name: ed.name,
+        startsOn: ed.starts_on,
+        endsOn: ed.ends_on,
+        days: ed.days,
+      }
+    : FALLBACK_EDITION;
 
   const list = tickets ?? [];
   const serverTickets: CachedTicket[] = list.map((t) => ({
@@ -71,7 +88,7 @@ export default async function TicketsPage() {
   return (
     <div className="flex flex-col">
       <PageHeader
-        title="Tu ticket"
+        title="Tu escarapela"
         subtitle="QR de acceso · funciona sin conexión"
         backHref="/"
       />
@@ -82,13 +99,13 @@ export default async function TicketsPage() {
 
           <GlassCard className="mt-4 flex flex-col divide-y divide-white/[0.06] p-2">
             <ListItem
-              thumb="📍"
+              thumb={<MapPin className="h-[18px] w-[18px] text-brand-white" aria-hidden />}
               title="Plaza Mayor, Medellín"
-              subtitle="16–18 de octubre, 2026"
+              subtitle={formatEditionRange(edition)}
             />
             {hasAcademiaAccess && (
               <ListItem
-                thumb="🎓"
+                thumb={<GraduationCap className="h-[18px] w-[18px] text-brand-white" aria-hidden />}
                 title="Incluye acceso a Academia"
                 subtitle="De por vida, por haber comprado esta boleta"
                 right={<Badge>Permanente</Badge>}

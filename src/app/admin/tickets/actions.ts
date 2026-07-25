@@ -1,25 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { assertAdmin } from "@/lib/adminGuard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateSecret } from "@/lib/totp";
-
-/** Verifica que quien llama es admin; devuelve el cliente service-role. */
-async function assertAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!profile?.is_admin) throw new Error("No autorizado (requiere admin)");
-  return createAdminClient();
-}
+import { FALLBACK_EDITION } from "@/lib/editions";
 
 // ---------------------------------------------------------------------------
 // CSV: parser tolerante (coma o punto y coma, campos entre comillas).
@@ -90,10 +75,16 @@ function pick(row: Record<string, string>, keys: string[]): string {
   return "";
 }
 
-function normalizeType(raw: string): "general" | "vip" | "black" {
+function normalizeType(
+  raw: string,
+): "general" | "vip" | "black" | "corporativa" {
   const t = raw.toLowerCase();
   if (t.includes("black")) return "black";
   if (t.includes("vip")) return "vip";
+  // Entrada Corporativa (equipos 10+): llega por el mismo CSV de La
+  // Tiquetera con su columna de tipo (Fase 23).
+  if (t.includes("corporativ") || t.includes("empresa") || t.includes("equipo"))
+    return "corporativa";
   return "general";
 }
 
@@ -116,7 +107,9 @@ async function findUserIdByEmail(
 export async function importTiquetera(formData: FormData) {
   const admin = await assertAdmin();
   const file = formData.get("file") as File | null;
-  const edition = parseInt((formData.get("edition") as string) || "2026", 10);
+  const edition =
+    parseInt((formData.get("edition") as string) || "", 10) ||
+    FALLBACK_EDITION.year;
   if (!file) return { ok: false, error: "No se recibió ningún archivo." };
 
   const rows = parseCsv(await file.text());
@@ -182,7 +175,9 @@ export async function assignBlack(formData: FormData) {
   const email = ((formData.get("email") as string) || "").toLowerCase().trim();
   const holder = ((formData.get("holder") as string) || "").trim();
   const order = ((formData.get("order") as string) || "").trim();
-  const edition = parseInt((formData.get("edition") as string) || "2026", 10);
+  const edition =
+    parseInt((formData.get("edition") as string) || "", 10) ||
+    FALLBACK_EDITION.year;
   if (!email) return { ok: false, error: "El correo es obligatorio." };
 
   const userId = await findUserIdByEmail(admin, email);
@@ -218,7 +213,9 @@ export async function refundTicket(formData: FormData) {
     .select("key,value")
     .in("key", ["event_start_date", "refund_full_days_before_event"]);
   const map = Object.fromEntries((cfg ?? []).map((c) => [c.key, c.value]));
-  const eventStart = new Date(map["event_start_date"] ?? "2026-10-16");
+  const eventStart = new Date(
+    map["event_start_date"] ?? FALLBACK_EDITION.startsOn,
+  );
   const days = parseInt(map["refund_full_days_before_event"] ?? "30", 10);
   const deadline = new Date(eventStart);
   deadline.setDate(deadline.getDate() - days);

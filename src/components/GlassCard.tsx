@@ -13,7 +13,8 @@ type GlassCardProps = {
 
 const BASE =
   "relative overflow-hidden rounded-[18px] border border-white/[0.12] " +
-  "bg-gradient-to-br from-white/[0.07] to-brand-lav/10 backdrop-blur-sm";
+  "bg-gradient-to-br from-white/[0.07] to-brand-lav/10 backdrop-blur-md " +
+  "transition-[border-color,box-shadow,transform] duration-200";
 
 /**
  * Superficie de vidrio/cromo — el contenedor base de toda la app.
@@ -29,7 +30,8 @@ export default function GlassCard({
   const classes = cn(
     BASE,
     sheen && "glass-sheen",
-    (href || onClick) && "cursor-pointer transition-transform active:scale-[0.98]",
+    (href || onClick) &&
+      "glass-hover cursor-pointer hover:border-white/25 hover:shadow-[0_0_18px_rgba(114,110,141,0.25)] active:scale-[0.98]",
     className,
   );
 

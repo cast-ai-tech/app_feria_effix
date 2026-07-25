@@ -47,13 +47,13 @@ export default function AdminTicketsClient({
   function run(fn: (fd: FormData) => Promise<{ ok?: boolean; error?: string; summary?: unknown; matched?: boolean }>, fd: FormData) {
     startTransition(async () => {
       const res = await fn(fd);
-      if (res?.error) setNote(`⚠️ ${res.error}`);
+      if (res?.error) setNote(`Error: ${res.error}`);
       else if (res?.summary) {
         const s = res.summary as { total: number; inserted: number; matched: number; skipped: number };
         setNote(
-          `✅ CSV: ${s.total} filas · ${s.inserted} importadas · ${s.matched} vinculadas a una cuenta · ${s.skipped} omitidas`,
+          `CSV procesado ✓ ${s.total} filas · ${s.inserted} importadas · ${s.matched} vinculadas a una cuenta · ${s.skipped} omitidas`,
         );
-      } else setNote("✅ Listo");
+      } else setNote("Listo ✓");
     });
   }
 
@@ -164,10 +164,20 @@ export default function AdminTicketsClient({
                     Marcar usada
                   </button>
                 </form>
-                <form action={(fd) => run(refundTicket, fd)}>
+                <form
+                  action={(fd) => run(refundTicket, fd)}
+                  onSubmit={(e) => {
+                    if (
+                      !confirm(
+                        "La política oficial es NO reembolsable pero transferible. ¿Registrar reembolso como EXCEPCIÓN administrativa aprobada por el equipo Effix?",
+                      )
+                    )
+                      e.preventDefault();
+                  }}
+                >
                   <input type="hidden" name="id" value={t.id} />
                   <button className="rounded-full border border-red-400/40 px-3 py-1 text-[9.5px] font-bold text-red-300">
-                    Reembolsar
+                    Reembolso (excepción)
                   </button>
                 </form>
                 <button

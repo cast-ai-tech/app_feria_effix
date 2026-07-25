@@ -1,11 +1,13 @@
 "use client";
 
 import { useTransition, useState } from "react";
+import { TriangleAlert } from "lucide-react";
 import Badge from "@/components/Badge";
 import Button from "@/components/Button";
 import GlassCard from "@/components/GlassCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Field, TextAreaField } from "@/components/Field";
+import { isPlaceholderUrl } from "@/lib/placeholders";
 import { createOffer, toggleOffer, deleteOffer } from "./actions";
 
 export type AdminOffer = {
@@ -28,6 +30,7 @@ export default function AdminAlianzasClient({
 }) {
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
 
   function run(
     fn: (fd: FormData) => Promise<{ ok?: boolean; error?: string }>,
@@ -36,7 +39,7 @@ export default function AdminAlianzasClient({
   ) {
     startTransition(async () => {
       const res = await fn(fd);
-      setNote(res?.error ? `⚠️ ${res.error}` : "✅ Listo");
+      setNote(res?.error ? `Error: ${res.error}` : "Listo ✓");
       if (res?.ok) reset?.();
     });
   }
@@ -49,14 +52,17 @@ export default function AdminAlianzasClient({
           onSubmit={(e) => {
             e.preventDefault();
             const form = e.currentTarget;
-            run(createOffer, new FormData(form), () => form.reset());
+            run(createOffer, new FormData(form), () => {
+              form.reset();
+              setDescription("");
+            });
           }}
           className="flex flex-col gap-3"
         >
           <Field label="Título" name="title" placeholder="Nombre de la oferta" required />
           <Field label="Aliado / empresa" name="partner_name" placeholder="Marca aliada" />
           <Field label="Beneficio / descuento" name="discount" placeholder="Ej. 30% OFF" />
-          <TextAreaField label="Descripción" name="description" value="" onChange={() => {}} placeholder="Detalle de la oferta" />
+          <TextAreaField label="Descripción" name="description" value={description} onChange={setDescription} placeholder="Detalle de la oferta" />
           <Field
             label="Link de referido (administrado por Feria Effix)"
             name="referral_url"
@@ -89,7 +95,14 @@ export default function AdminAlianzasClient({
                   {o.discount ? ` · ${o.discount}` : ""} · Ed. {o.edition}
                 </p>
               </div>
-              <Badge>{o.active ? "Activa" : "Oculta"}</Badge>
+              <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                <Badge>{o.active ? "Activa" : "Oculta"}</Badge>
+                {isPlaceholderUrl(o.referral_url) && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 px-2 py-0.5 text-[9px] font-bold text-amber-300">
+                    <TriangleAlert className="h-2.5 w-2.5" aria-hidden /> link placeholder
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
               <form action={(fd) => run(toggleOffer, fd)}>
@@ -99,7 +112,12 @@ export default function AdminAlianzasClient({
                   {o.active ? "Ocultar" : "Mostrar"}
                 </button>
               </form>
-              <form action={(fd) => run(deleteOffer, fd)}>
+              <form
+                action={(fd) => run(deleteOffer, fd)}
+                onSubmit={(e) => {
+                  if (!confirm("¿Eliminar esta oferta? Esta acción no se puede deshacer.")) e.preventDefault();
+                }}
+              >
                 <input type="hidden" name="id" value={o.id} />
                 <button className="rounded-full border border-red-400/40 px-3 py-1 text-[9.5px] font-bold text-red-300">
                   Eliminar
