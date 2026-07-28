@@ -120,6 +120,8 @@ Copia las llaves que imprime `npx supabase status` a `.env.local`. Interfaz visu
 
 Usuarios de prueba (los usa el E2E): corre `node scripts/seed-local.mjs` — crea `asistente@test.local / prueba123` (boleta General activa) y `admin@test.local / admin123` (admin). Solo funciona contra el Supabase local.
 
+Banners y videos del home: corre `node scripts/seed-banners.mjs` — sube los videos del hero, los logos de sponsors reales y el splash de Grupo Effi al bucket `banners` y siembra las 17 filas. Los banners son DATOS (base de datos + Storage), no viajan con git: **hay que correr este seed en cada computador nuevo** (y después de cada `db reset`). Es seguro re-correrlo; no toca banners creados a mano en el admin.
+
 ### Variables de entorno (`.env.local`)
 
 | Variable | Qué es |
