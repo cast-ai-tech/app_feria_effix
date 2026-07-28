@@ -6,6 +6,7 @@ import AppHeader from "@/components/AppHeader";
 import BottomNav from "@/components/BottomNav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import SplashSponsor from "@/components/SplashSponsor";
+import AppOpenIntro from "@/components/AppOpenIntro";
 import InstallAppBanner from "@/components/InstallAppBanner";
 import MiniPlayerProvider from "@/components/player/MiniPlayerProvider";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
       <body className="min-h-full antialiased" suppressHydrationWarning>
         <ServiceWorkerRegister />
         <AppBackground />
+        <AppOpenIntro />
         <SplashSponsor />
 
         {/*

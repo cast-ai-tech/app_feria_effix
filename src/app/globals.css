@@ -81,9 +81,21 @@ body {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(1100px circle at 25% -5%, rgba(114, 110, 141, 0.32), transparent 60%),
-    radial-gradient(900px circle at 85% 105%, rgba(114, 110, 141, 0.22), transparent 55%),
-    radial-gradient(700px circle at 70% 40%, rgba(36, 138, 204, 0.06), transparent 60%),
+    radial-gradient(
+      1100px circle at 25% -5%,
+      rgba(114, 110, 141, 0.32),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px circle at 85% 105%,
+      rgba(114, 110, 141, 0.22),
+      transparent 55%
+    ),
+    radial-gradient(
+      700px circle at 70% 40%,
+      rgba(36, 138, 204, 0.06),
+      transparent 60%
+    ),
     var(--brand-black);
 }
 
@@ -172,6 +184,22 @@ body {
   }
 }
 
+/* Fase 27 — Entrada del logo en el intro de apertura de la app. */
+.intro-logo {
+  animation: intro-logo-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes intro-logo-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Degradados metálicos por tier (stickers y botones; texto negro). */
 .tier-black-bg {
   background: var(--tier-black);
@@ -251,7 +279,8 @@ body {
   .glass-sheen::after,
   .tier-shine::after,
   .live-dot,
-  .btn-glow {
+  .btn-glow,
+  .intro-logo {
     animation: none;
   }
 }
