@@ -3,9 +3,9 @@
 import { CircleCheck, Play } from "lucide-react";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import GlassCard from "@/components/GlassCard";
 import YoutubePlayer from "@/components/academia/YoutubePlayer";
+import { useMiniPlayer } from "@/components/player/MiniPlayerProvider";
 import { createClient } from "@/lib/supabase/client";
 import { parseYoutubeId } from "@/lib/youtube";
 import { cn } from "@/lib/cn";
@@ -14,10 +14,12 @@ import { cn } from "@/lib/cn";
  * Card de una grabación de Academia (Fase 20) — compartido entre la vista
  * completa (alumni) y el teaser del anillo gratis.
  *
- * Progreso: los videos son URLs externas (YouTube), sin player propio, así
- * que el "progreso" registrable hoy es: abrió el video (upsert al hacer
- * click) y "Marcar como vista" (completed). El tracking por segundos llega
- * cuando haya player propio.
+ * El video se abre en el mini-player global (Fase 27, MiniPlayerProvider),
+ * que es dueño único del progreso (seconds/duration/completed) — esta tarjeta
+ * solo lee el estado ya calculado por el servidor y hace overrides
+ * OPTIMISTAS locales para calificar/marcar visto (sin router.refresh: el
+ * mini-player vive en el layout raíz y un refresh interrumpiría cualquier
+ * video sonando en otra sección de la app).
  */
 export type RecordingView = {
   id: string;
@@ -36,6 +38,10 @@ export type RecordingView = {
   opened: boolean;
   /** La marcó como vista. */
   completed: boolean;
+  /** Segundo donde quedó la última vez (resume). */
+  initialSeconds: number;
+  /** Duración conocida del video en segundos (0 = desconocida). */
+  durationSeconds: number;
 };
 
 function StarRating({
@@ -49,10 +55,11 @@ function StarRating({
   avg: number;
   count: number;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [hover, setHover] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [myStarsOverride, setMyStarsOverride] = useState<number | null>(null);
+  const effectiveStars = myStarsOverride ?? myStars;
 
   function rate(stars: number) {
     setError(null);
@@ -65,19 +72,22 @@ function StarRating({
         setError("Inicia sesión para calificar.");
         return;
       }
-      const { error } = await supabase.from("recording_ratings").upsert(
-        { recording_id: recordingId, user_id: user.id, stars },
-        { onConflict: "recording_id,user_id" },
-      );
+      const { error } = await supabase
+        .from("recording_ratings")
+        .upsert(
+          { recording_id: recordingId, user_id: user.id, stars },
+          { onConflict: "recording_id,user_id" },
+        );
       if (error) {
         setError(error.message);
         return;
       }
-      router.refresh();
+      // Sin router.refresh(): estado optimista local (ver comentario de arriba).
+      setMyStarsOverride(stars);
     });
   }
 
-  const shown = hover || myStars;
+  const shown = hover || effectiveStars;
 
   return (
     <div className="flex flex-col gap-1">
@@ -92,7 +102,7 @@ function StarRating({
               type="button"
               disabled={pending}
               aria-label={`Calificar con ${n} ${n === 1 ? "estrella" : "estrellas"}`}
-              aria-pressed={myStars === n}
+              aria-pressed={effectiveStars === n}
               onMouseEnter={() => setHover(n)}
               onFocus={() => setHover(n)}
               onClick={() => rate(n)}
@@ -111,9 +121,9 @@ function StarRating({
             : "Sé el primero en calificar"}
         </span>
       </div>
-      {myStars > 0 && !error && (
+      {effectiveStars > 0 && !error && (
         <span className="text-[9px] text-brand-dim">
-          Tu calificación: {myStars}/5 · toca para cambiarla
+          Tu calificación: {effectiveStars}/5 · toca para cambiarla
         </span>
       )}
       {error && <span className="text-[9px] text-red-300">{error}</span>}
@@ -126,12 +136,16 @@ export default function RecordingCard({
 }: {
   recording: RecordingView;
 }) {
-  const router = useRouter();
+  const { open } = useMiniPlayer();
   const [marking, setMarking] = useState(false);
+  const [completedOverride, setCompletedOverride] = useState<boolean | null>(
+    null,
+  );
   const r = recording;
+  const completed = completedOverride ?? r.completed;
 
-  /** Registra la apertura del video (sin bloquear la navegación). */
-  function registerOpen() {
+  /** Registra la apertura de un video NO-YouTube (pestaña externa). */
+  function registerExternalOpen() {
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
@@ -140,8 +154,7 @@ export default function RecordingCard({
         .upsert(
           { user_id: user.id, recording_id: r.id },
           { onConflict: "user_id,recording_id", ignoreDuplicates: true },
-        )
-        .then(() => router.refresh());
+        );
     });
   }
 
@@ -152,11 +165,15 @@ export default function RecordingCard({
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("watch_progress").upsert(
-        { user_id: user.id, recording_id: r.id, completed: !r.completed },
-        { onConflict: "user_id,recording_id" },
-      );
-      router.refresh();
+      const next = !completed;
+      const { error } = await supabase
+        .from("watch_progress")
+        .upsert(
+          { user_id: user.id, recording_id: r.id, completed: next },
+          { onConflict: "user_id,recording_id" },
+        );
+      // Sin router.refresh(): estado optimista local (ver comentario de arriba).
+      if (!error) setCompletedOverride(next);
     }
     setMarking(false);
   }
@@ -165,18 +182,27 @@ export default function RecordingCard({
 
   return (
     <GlassCard className="flex flex-col gap-3 p-4">
-      {/* Video EMBEBIDO dentro de la app (YouTube lite-embed). */}
+      {/* Abre el mini-player global (Fase 27) en vez de un iframe inline. */}
       {youtubeId && (
         <YoutubePlayer
           videoId={youtubeId}
           title={r.title}
-          onPlay={registerOpen}
+          onOpen={() =>
+            open({
+              recordingId: r.id,
+              videoId: youtubeId,
+              title: r.title,
+              speakerName: r.speaker_name,
+              initialSeconds: r.initialSeconds,
+              durationSeconds: r.durationSeconds,
+            })
+          }
         />
       )}
 
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[12px] bg-gradient-to-br from-brand-lav to-[#23222b] text-[16px]">
-          {r.completed ? (
+          {completed ? (
             <CircleCheck className="h-5 w-5 text-emerald-300" aria-hidden />
           ) : (
             <Play className="h-5 w-5 text-brand-white" aria-hidden />
@@ -215,10 +241,10 @@ export default function RecordingCard({
             href={r.video_url}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={registerOpen}
+            onClick={registerExternalOpen}
             className="inline-flex flex-shrink-0 items-center justify-center rounded-full border border-white/35 bg-transparent px-[13px] py-[7px] text-[10px] font-extrabold text-brand-white transition-transform active:scale-95"
           >
-            {r.opened && !r.completed ? "Continuar →" : "Ver video →"}
+            {r.opened && !completed ? "Continuar →" : "Ver video →"}
           </a>
         )}
       </div>
@@ -229,14 +255,14 @@ export default function RecordingCard({
           disabled={marking}
           className={cn(
             "self-start rounded-full border px-3 py-1 text-[9.5px] font-bold",
-            r.completed
+            completed
               ? "border-emerald-400/40 text-emerald-300"
               : "border-white/25 text-brand-dim",
           )}
         >
           {marking
             ? "Guardando…"
-            : r.completed
+            : completed
               ? "Vista ✓ · toca para desmarcar"
               : "Marcar como vista"}
         </button>

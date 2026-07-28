@@ -26,9 +26,12 @@ export default async function AdminAcademiaPage({
   // El admin ve TODAS las grabaciones (cualquier estado) vía RLS.
   let query = supabase
     .from("recordings")
-    .select("id,title,speaker_name,description,video_url,edition,status,is_free", {
-      count: "exact",
-    })
+    .select(
+      "id,title,speaker_name,description,video_url,edition,status,is_free",
+      {
+        count: "exact",
+      },
+    )
     .order("created_at", { ascending: false })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
@@ -36,15 +39,23 @@ export default async function AdminAcademiaPage({
     query = query.or(`title.ilike.%${q}%,speaker_name.ilike.%${q}%`);
   }
 
-  const [{ data: recs, count }, { data: eds }, { data: cols }] =
-    await Promise.all([
-      query,
-      supabase.from("editions").select("year").order("year", { ascending: false }),
-      supabase
-        .from("collections")
-        .select("id,name,description,edition,sort_order")
-        .order("sort_order"),
-    ]);
+  const [
+    { data: recs, count },
+    { data: eds },
+    { data: cols },
+    { data: installEvents },
+  ] = await Promise.all([
+    query,
+    supabase
+      .from("editions")
+      .select("year")
+      .order("year", { ascending: false }),
+    supabase
+      .from("collections")
+      .select("id,name,description,edition,sort_order")
+      .order("sort_order"),
+    supabase.from("app_install_events").select("event_type"),
+  ]);
 
   const collectionsMeta = cols ?? [];
   const { data: items } = collectionsMeta.length
@@ -74,6 +85,35 @@ export default async function AdminAcademiaPage({
   const editions = (eds ?? []).map((e) => e.year);
   const total = count ?? 0;
 
+  // Métricas de video (Fase 27): solo para las grabaciones de esta página.
+  const recIds = (recs ?? []).map((r) => r.id);
+  const { data: watchStats } = recIds.length
+    ? await supabase
+        .from("recording_watch_stats")
+        .select("recording_id,viewers,completed_count,avg_pct_watched")
+        .in("recording_id", recIds)
+    : { data: [] };
+  const statsById = new Map((watchStats ?? []).map((s) => [s.recording_id, s]));
+
+  const recordings: AdminRecording[] = (recs ?? []).map((r) => {
+    const s = statsById.get(r.id);
+    return {
+      ...r,
+      viewers: s?.viewers ?? 0,
+      completedCount: s?.completed_count ?? 0,
+      avgPctWatched: s ? Number(s.avg_pct_watched) : 0,
+    };
+  });
+
+  // Totales del aviso de instalación PWA (Fase 27).
+  const installTotals = (installEvents ?? []).reduce(
+    (acc, e) => {
+      acc[e.event_type as "shown" | "accepted" | "dismissed"] += 1;
+      return acc;
+    },
+    { shown: 0, accepted: 0, dismissed: 0 },
+  );
+
   return (
     <div className="flex flex-col">
       <PageHeader
@@ -82,13 +122,14 @@ export default async function AdminAcademiaPage({
         backHref="/admin"
       />
       <AdminAcademiaClient
-        recordings={(recs ?? []) as AdminRecording[]}
+        recordings={recordings}
         editions={editions.length > 0 ? editions : [2026, 2025, 2024]}
         collections={collections}
         page={page}
         hasMore={page * PAGE_SIZE < total}
         total={total}
         q={q}
+        installTotals={installTotals}
       />
     </div>
   );

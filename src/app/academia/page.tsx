@@ -60,7 +60,7 @@ export default async function AcademiaPage({
           .in("recording_id", ids),
         supabase
           .from("watch_progress")
-          .select("recording_id,completed")
+          .select("recording_id,completed,seconds,duration_seconds")
           .eq("user_id", userId)
           .in("recording_id", ids),
       ]);
@@ -72,18 +72,21 @@ export default async function AcademiaPage({
       (mine ?? []).map((m) => [m.recording_id, m.stars] as const),
     );
     const progById = new Map(
-      (progress ?? []).map((p) => [p.recording_id, p.completed] as const),
+      (progress ?? []).map((p) => [p.recording_id, p] as const),
     );
 
     return rows.map((r) => {
       const s = statById.get(r.id);
+      const p = progById.get(r.id);
       return {
         ...r,
         avg: s ? Number(s.avg_stars) : 0,
         count: s?.votes ?? 0,
         myStars: myById.get(r.id) ?? 0,
         opened: progById.has(r.id),
-        completed: progById.get(r.id) ?? false,
+        completed: p?.completed ?? false,
+        initialSeconds: p?.seconds ?? 0,
+        durationSeconds: p?.duration_seconds ?? 0,
       };
     });
   }
@@ -142,7 +145,9 @@ export default async function AcademiaPage({
         .order("sort_order"),
       supabase
         .from("watch_progress")
-        .select("recording_id,updated_at,recordings(title,speaker_name,video_url,status)")
+        .select(
+          "recording_id,updated_at,seconds,duration_seconds,recordings(title,speaker_name,video_url,status)",
+        )
         .eq("user_id", userId)
         .eq("completed", false)
         .order("updated_at", { ascending: false })
@@ -184,6 +189,8 @@ export default async function AcademiaPage({
         title: rec.title,
         speaker_name: rec.speaker_name,
         video_url: rec.video_url,
+        initialSeconds: row.seconds,
+        durationSeconds: row.duration_seconds,
       };
     })
     .filter((x): x is ContinueItem => x !== null);

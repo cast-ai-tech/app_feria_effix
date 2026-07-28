@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Gift, TriangleAlert } from "lucide-react";
+import { Download, Eye, Gift, TriangleAlert } from "lucide-react";
 import Badge from "@/components/Badge";
 import Button from "@/components/Button";
 import GlassCard from "@/components/GlassCard";
@@ -31,6 +31,16 @@ export type AdminRecording = {
   edition: number;
   status: string; // 'borrador' | 'revision' | 'publicada'
   is_free: boolean;
+  /** Métricas de video (Fase 27, vista recording_watch_stats). */
+  viewers: number;
+  completedCount: number;
+  avgPctWatched: number;
+};
+
+export type InstallTotals = {
+  shown: number;
+  accepted: number;
+  dismissed: number;
 };
 
 export type AdminCollection = {
@@ -150,6 +160,7 @@ export default function AdminAcademiaClient({
   hasMore,
   total,
   q,
+  installTotals,
 }: {
   recordings: AdminRecording[];
   /** Años disponibles (tabla `editions`), de más reciente a más antiguo. */
@@ -159,6 +170,7 @@ export default function AdminAcademiaClient({
   hasMore: boolean;
   total: number;
   q: string;
+  installTotals: InstallTotals;
 }) {
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState<string | null>(null);
@@ -206,8 +218,17 @@ export default function AdminAcademiaClient({
           }}
           className="flex flex-col gap-3"
         >
-          <Field label="Nombre" name="name" placeholder="Ej. Logística y última milla" required />
-          <Field label="Descripción" name="description" placeholder="Opcional" />
+          <Field
+            label="Nombre"
+            name="name"
+            placeholder="Ej. Logística y última milla"
+            required
+          />
+          <Field
+            label="Descripción"
+            name="description"
+            placeholder="Opcional"
+          />
           <Field
             label="Edición (vacío = todas)"
             name="edition"
@@ -231,17 +252,25 @@ export default function AdminAcademiaClient({
                       {c.name}
                     </p>
                     <p className="text-[9.5px] text-brand-muted">
-                      {c.edition ? `Edición ${c.edition}` : "Todas las ediciones"}
+                      {c.edition
+                        ? `Edición ${c.edition}`
+                        : "Todas las ediciones"}
                       {" · "}
-                      {c.items.length} {c.items.length === 1 ? "charla" : "charlas"}
+                      {c.items.length}{" "}
+                      {c.items.length === 1 ? "charla" : "charlas"}
                     </p>
                   </div>
                   <form
-                action={(fd) => run(deleteCollection, fd)}
-                onSubmit={(e) => {
-                  if (!confirm("¿Eliminar esta colección? Las grabaciones no se borran, solo la agrupación.")) e.preventDefault();
-                }}
-              >
+                    action={(fd) => run(deleteCollection, fd)}
+                    onSubmit={(e) => {
+                      if (
+                        !confirm(
+                          "¿Eliminar esta colección? Las grabaciones no se borran, solo la agrupación.",
+                        )
+                      )
+                        e.preventDefault();
+                    }}
+                  >
                     <input type="hidden" name="id" value={c.id} />
                     <button className="rounded-full border border-red-400/40 px-3 py-1 text-[9.5px] font-bold text-red-300">
                       Eliminar
@@ -259,7 +288,11 @@ export default function AdminAcademiaClient({
                           {i.title}
                         </span>
                         <form action={(fd) => run(removeCollectionItem, fd)}>
-                          <input type="hidden" name="collection_id" value={c.id} />
+                          <input
+                            type="hidden"
+                            name="collection_id"
+                            value={c.id}
+                          />
                           <input
                             type="hidden"
                             name="recording_id"
@@ -284,6 +317,21 @@ export default function AdminAcademiaClient({
           <p className="text-[11px] font-semibold text-brand-white">{note}</p>
         </GlassCard>
       )}
+
+      {/* Métricas del aviso de instalación PWA (Fase 27) */}
+      <GlassCard className="flex items-center gap-2 p-4">
+        <Download
+          className="h-4 w-4 flex-shrink-0 text-brand-white"
+          aria-hidden
+        />
+        <p className="text-[10.5px] text-brand-muted">
+          Instalación de la app: visto{" "}
+          <b className="text-brand-white">{installTotals.shown}</b> veces ·
+          instalado <b className="text-brand-white">{installTotals.accepted}</b>{" "}
+          veces · descartado{" "}
+          <b className="text-brand-white">{installTotals.dismissed}</b> veces
+        </p>
+      </GlassCard>
 
       {/* Buscador server-side (hallazgo #29) */}
       <form method="get" action="/admin/academia" className="flex gap-2">
@@ -314,6 +362,14 @@ export default function AdminAcademiaClient({
                 <p className="truncate text-[10px] text-brand-muted">
                   {r.speaker_name ?? "—"} · Ed. {r.edition}
                 </p>
+                {r.viewers > 0 && (
+                  <p className="mt-0.5 flex items-center gap-1 text-[9.5px] text-brand-dim">
+                    <Eye className="h-3 w-3 flex-shrink-0" aria-hidden />
+                    {r.viewers} {r.viewers === 1 ? "vista" : "vistas"} ·{" "}
+                    {r.avgPctWatched}% completitud promedio · {r.completedCount}{" "}
+                    terminaron
+                  </p>
+                )}
               </div>
               <div className="flex flex-shrink-0 flex-col items-end gap-1">
                 <Badge>{STATUS_LABEL[r.status] ?? r.status}</Badge>
@@ -324,7 +380,8 @@ export default function AdminAcademiaClient({
                 )}
                 {isPlaceholderUrl(r.video_url) && (
                   <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 px-2 py-0.5 text-[9px] font-bold text-amber-300">
-                    <TriangleAlert className="h-2.5 w-2.5" aria-hidden /> video placeholder
+                    <TriangleAlert className="h-2.5 w-2.5" aria-hidden /> video
+                    placeholder
                   </span>
                 )}
               </div>
@@ -372,7 +429,12 @@ export default function AdminAcademiaClient({
               <form
                 action={(fd) => run(deleteRecording, fd)}
                 onSubmit={(e) => {
-                  if (!confirm("¿Eliminar esta grabación? Se borran sus calificaciones y progreso. Esta acción no se puede deshacer.")) e.preventDefault();
+                  if (
+                    !confirm(
+                      "¿Eliminar esta grabación? Se borran sus calificaciones y progreso. Esta acción no se puede deshacer.",
+                    )
+                  )
+                    e.preventDefault();
                 }}
               >
                 <input type="hidden" name="id" value={r.id} />

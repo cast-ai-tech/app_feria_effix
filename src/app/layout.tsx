@@ -6,6 +6,8 @@ import AppHeader from "@/components/AppHeader";
 import BottomNav from "@/components/BottomNav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import SplashSponsor from "@/components/SplashSponsor";
+import InstallAppBanner from "@/components/InstallAppBanner";
+import MiniPlayerProvider from "@/components/player/MiniPlayerProvider";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -53,13 +55,18 @@ export default function RootLayout({
           sin marcos centrados, sin franjas vacías, sin sidebars.
           Header de app sticky arriba + BottomNav abajo, siempre.
         */}
-        <div className="relative z-10 flex min-h-dvh w-full flex-col">
-          <AppHeader />
-          <main className="no-scrollbar w-full flex-1 px-5 pt-5 pb-[calc(7rem+env(safe-area-inset-bottom))] md:px-8 xl:px-12">
-            {children}
-          </main>
-          <BottomNav />
-        </div>
+        {/* MiniPlayerProvider (Fase 27): envuelve toda la app para que el
+            mini-player de Academia sobreviva la navegación entre secciones. */}
+        <MiniPlayerProvider>
+          <div className="relative z-10 flex min-h-dvh w-full flex-col">
+            <AppHeader />
+            <main className="no-scrollbar w-full flex-1 px-5 pt-5 pb-[calc(7rem+env(safe-area-inset-bottom))] md:px-8 xl:px-12">
+              {children}
+            </main>
+            <BottomNav />
+          </div>
+        </MiniPlayerProvider>
+        <InstallAppBanner />
       </body>
     </html>
   );

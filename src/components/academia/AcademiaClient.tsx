@@ -12,12 +12,16 @@ import SectionTitle from "@/components/SectionTitle";
 import RecordingCard, {
   type RecordingView,
 } from "@/components/academia/RecordingCard";
+import { useMiniPlayer } from "@/components/player/MiniPlayerProvider";
+import { parseYoutubeId } from "@/lib/youtube";
 
 export type ContinueItem = {
   id: string;
   title: string;
   speaker_name: string | null;
   video_url: string | null;
+  initialSeconds: number;
+  durationSeconds: number;
 };
 
 export type CollectionView = {
@@ -65,6 +69,7 @@ export default function AcademiaClient({
   continueWatching: ContinueItem[];
 }) {
   const router = useRouter();
+  const { open } = useMiniPlayer();
   const [query, setQuery] = useState("");
 
   const byId = useMemo(
@@ -107,7 +112,10 @@ export default function AcademiaClient({
   return (
     <div className="flex flex-col">
       <div className="mb-2 flex justify-center">
-        <Badge><LockOpen className="mr-1 inline h-3 w-3" aria-hidden />Acceso permanente</Badge>
+        <Badge>
+          <LockOpen className="mr-1 inline h-3 w-3" aria-hidden />
+          Acceso permanente
+        </Badge>
       </div>
 
       {/* Chips de edición → navegación server-side */}
@@ -151,14 +159,9 @@ export default function AcademiaClient({
         <>
           <SectionTitle>Continuar viendo</SectionTitle>
           <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
-            {continueWatching.map((c) => (
-              <a
-                key={c.id}
-                href={c.video_url ?? "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="min-w-[180px] flex-shrink-0"
-              >
+            {continueWatching.map((c) => {
+              const youtubeId = parseYoutubeId(c.video_url);
+              const card = (
                 <GlassCard className="flex flex-col gap-1 p-3">
                   <Play className="h-4 w-4 text-brand-white" aria-hidden />
                   <p className="line-clamp-2 text-[11px] font-extrabold leading-snug text-brand-white">
@@ -170,8 +173,39 @@ export default function AcademiaClient({
                     </p>
                   )}
                 </GlassCard>
-              </a>
-            ))}
+              );
+
+              // Con videoId de YouTube abre el mini-player; si no, pestaña externa.
+              return youtubeId ? (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="min-w-[180px] flex-shrink-0 text-left"
+                  onClick={() =>
+                    open({
+                      recordingId: c.id,
+                      videoId: youtubeId,
+                      title: c.title,
+                      speakerName: c.speaker_name,
+                      initialSeconds: c.initialSeconds,
+                      durationSeconds: c.durationSeconds,
+                    })
+                  }
+                >
+                  {card}
+                </button>
+              ) : (
+                <a
+                  key={c.id}
+                  href={c.video_url ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-[180px] flex-shrink-0"
+                >
+                  {card}
+                </a>
+              );
+            })}
           </div>
         </>
       )}
