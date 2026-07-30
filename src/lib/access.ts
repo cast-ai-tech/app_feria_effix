@@ -1,7 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { FALLBACK_EDITION, type EditionInfo } from "@/lib/editions";
-import { resolveTicketAccess } from "@/lib/accessRules";
+import {
+  EMPTY_ROLES,
+  resolveRoles,
+  resolveTicketAccess,
+  resolveTicketTier,
+  type TicketTier,
+  type UserRoles,
+} from "@/lib/accessRules";
 
 /**
  * Control de acceso por módulo — Modelo de acceso del Master Prompt (§5).
@@ -29,6 +36,13 @@ export type AccessInfo = {
   currentEdition: number;
   /** Edición activa completa (fechas y días) desde la tabla `editions`. */
   edition: EditionInfo;
+  /**
+   * Mejor tier de boleta ACTIVA de la edición en curso (Fase 28).
+   * null = sin boleta vigente (o slug desconocido).
+   */
+  ticketTier: TicketTier | null;
+  /** Roles derivados: expositor, ponente, patrocinador, equipo (Fase 28). */
+  roles: UserRoles;
 };
 
 export async function getAccess(): Promise<AccessInfo> {
@@ -40,6 +54,8 @@ export async function getAccess(): Promise<AccessInfo> {
     hasCurrentTicket: false,
     currentEdition: FALLBACK_EDITION.year,
     edition: FALLBACK_EDITION,
+    ticketTier: null,
+    roles: EMPTY_ROLES,
   };
 
   if (!isSupabaseConfigured()) return base;
@@ -71,24 +87,49 @@ export async function getAccess(): Promise<AccessInfo> {
   if (!user) return base;
   base.user = { id: user.id, email: user.email ?? "" };
 
-  // Admin.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  base.isAdmin = !!profile?.is_admin;
+  // Permisos y membresías en paralelo (Fase 28). RLS limita cada consulta a
+  // las filas del propio usuario; si alguna tabla aún no existe (migración
+  // pendiente), su `data` viene null y ese rol simplemente queda vacío.
+  const [
+    { data: profile },
+    { data: tickets },
+    { data: standRows },
+    { data: speakerRows },
+    { data: sponsorRows },
+    { data: teamRow },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("tickets")
+      .select("edition,status,ticket_type")
+      .eq("user_id", user.id),
+    supabase.from("stand_staff").select("stand_id").eq("user_id", user.id),
+    supabase.from("speakers").select("id").eq("user_id", user.id),
+    supabase.from("sponsor_staff").select("sponsor_id").eq("user_id", user.id),
+    supabase
+      .from("team_members")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
-  // Boletas del usuario (RLS: solo ve las suyas). Si la tabla aún no existe
-  // (migración de Fase 3 no ejecutada), `data` viene null y quedamos sin acceso.
-  const { data: tickets } = await supabase
-    .from("tickets")
-    .select("edition,status")
-    .eq("user_id", user.id);
+  base.isAdmin = !!profile?.is_admin;
 
   const rings = resolveTicketAccess(tickets ?? [], base.currentEdition);
   base.hasCurrentTicket = rings.hasCurrentTicket;
   base.isAlumni = rings.isAlumni;
+  base.ticketTier = resolveTicketTier(tickets ?? [], base.currentEdition);
+
+  base.roles = resolveRoles({
+    standIds: (standRows ?? []).map((r) => r.stand_id),
+    speakerIds: (speakerRows ?? []).map((r) => r.id),
+    sponsorIds: (sponsorRows ?? []).map((r) => r.sponsor_id),
+    staffRole: teamRow?.role ?? null,
+  });
 
   return base;
 }

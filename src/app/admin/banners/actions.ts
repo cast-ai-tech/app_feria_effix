@@ -13,19 +13,23 @@ const PLACEMENTS = [
   "footer_strip",
 ];
 const MODULES = ["agenda", "stands", "ponentes", "academia", "alianzas"];
+const SPONSOR_TIERS = ["basico", "plata", "oro", "diamante"];
 
 function readBanner(formData: FormData) {
   const placement = (formData.get("placement") as string) || "";
   const module_key = ((formData.get("module_key") as string) || "").trim();
   const sponsor_tier = ((formData.get("sponsor_tier") as string) || "").trim();
+  const sponsor_id = ((formData.get("sponsor_id") as string) || "").trim();
   return {
     placement,
     module_key: placement === "module_top" ? module_key || null : null,
-    sponsor_tier: sponsor_tier || null,
+    sponsor_tier: SPONSOR_TIERS.includes(sponsor_tier) ? sponsor_tier : null,
+    sponsor_id: sponsor_id || null,
     title: ((formData.get("title") as string) || "").trim(),
     image_url: ((formData.get("image_url") as string) || "").trim(),
     link_url: ((formData.get("link_url") as string) || "").trim() || null,
-    sort_order: parseInt((formData.get("sort_order") as string) || "100", 10) || 100,
+    sort_order:
+      parseInt((formData.get("sort_order") as string) || "100", 10) || 100,
     starts_at: ((formData.get("starts_at") as string) || "").trim() || null,
     ends_at: ((formData.get("ends_at") as string) || "").trim() || null,
     edition: parseInt((formData.get("edition") as string) || "", 10),
@@ -45,7 +49,8 @@ export async function createBanner(formData: FormData): Promise<Result> {
     return { ok: false, error: "Placement inválido." };
   if (b.placement === "module_top" && !MODULES.includes(b.module_key ?? ""))
     return { ok: false, error: "Para module_top elige el módulo." };
-  if (!b.title) return { ok: false, error: "El título (patrocinador) es obligatorio." };
+  if (!b.title)
+    return { ok: false, error: "El título (patrocinador) es obligatorio." };
   if (!b.image_url)
     return { ok: false, error: "Sube la imagen del banner primero." };
 

@@ -16,13 +16,15 @@ import BannerSlot from "@/components/BannerSlot";
 import Countdown from "@/components/Countdown";
 import GlassCard from "@/components/GlassCard";
 import Button from "@/components/Button";
+import RoleSpaces from "@/components/home/RoleSpaces";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getAccess } from "@/lib/access";
 
 /**
  * HOME (rediseñada en Fase 24). Orden: header → carrusel de patrocinio →
- * countdown → banner inline → módulos → próximas charlas → franja Patrocinan.
+ * countdown → banner inline → tus espacios (Fase 28) → módulos →
+ * próximas charlas → franja Patrocinan.
  */
 const MODULES: Array<{
   href: string;
@@ -30,14 +32,44 @@ const MODULES: Array<{
   label: string;
   sub: string;
 }> = [
-  { href: "/credencial", icon: IdCard, label: "Credencial", sub: "Escanea y conecta" },
-  { href: "/pasaporte", icon: Stamp, label: "Pasaporte", sub: "Sellos y premios" },
-  { href: "/tickets", icon: Ticket, label: "Mi escarapela", sub: "QR y acceso" },
-  { href: "/agenda", icon: CalendarClock, label: "Programación", sub: "En tiempo real" },
+  {
+    href: "/credencial",
+    icon: IdCard,
+    label: "Credencial",
+    sub: "Escanea y conecta",
+  },
+  {
+    href: "/pasaporte",
+    icon: Stamp,
+    label: "Pasaporte",
+    sub: "Sellos y premios",
+  },
+  {
+    href: "/tickets",
+    icon: Ticket,
+    label: "Mi escarapela",
+    sub: "QR y acceso",
+  },
+  {
+    href: "/agenda",
+    icon: CalendarClock,
+    label: "Programación",
+    sub: "En tiempo real",
+  },
   { href: "/mapa", icon: MapPin, label: "Mapa", sub: "Plano del recinto" },
   { href: "/stands", icon: Store, label: "Stands", sub: "Agenda tu visita" },
-  { href: "/ponentes", icon: Mic, label: "Ponentes", sub: "Perfiles y charlas" },
-  { href: "/academia", icon: GraduationCap, label: "Academia", sub: "Contenido grabado" },
+  {
+    href: "/ponentes",
+    icon: Mic,
+    label: "Ponentes",
+    sub: "Perfiles y charlas",
+  },
+  {
+    href: "/academia",
+    icon: GraduationCap,
+    label: "Academia",
+    sub: "Contenido grabado",
+  },
   { href: "/alianzas", icon: Handshake, label: "Alianzas", sub: "Marketplace" },
   { href: "/comunidad", icon: Users, label: "Comunidad", sub: "Networking" },
 ];
@@ -153,6 +185,10 @@ export default async function HomePage() {
         edition={a.currentEdition}
         className="mb-5"
       />
+
+      {/* Tus espacios: accesos por rol (expositor/ponente/patrocinador/staff)
+          y beneficios de tier VIP/Black (Fase 28). */}
+      <RoleSpaces roles={a.roles} ticketTier={a.ticketTier} />
 
       <p className="text-caption mb-3 text-brand-dim">Explora la feria</p>
 

@@ -1,23 +1,36 @@
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { getAccess } from "@/lib/access";
-import AdminBannersClient, { type AdminBanner } from "./AdminBannersClient";
+import AdminBannersClient, {
+  type AdminBanner,
+  type SponsorOption,
+} from "./AdminBannersClient";
 
 export default async function AdminBannersPage() {
   const access = await getAccess();
   const supabase = await createClient();
 
-  const [{ data: banners }, { data: events }] = await Promise.all([
-    supabase
-      .from("banners")
-      .select(
-        "id,placement,module_key,sponsor_tier,title,image_url,link_url,sort_order,active,edition",
-      )
-      .order("placement")
-      .order("sort_order")
-      .limit(200),
-    supabase.from("banner_events").select("banner_id,event_type").limit(100000),
-  ]);
+  const [{ data: banners }, { data: events }, { data: sponsors }] =
+    await Promise.all([
+      supabase
+        .from("banners")
+        .select(
+          "id,placement,module_key,sponsor_tier,sponsor_id,title,image_url,link_url,sort_order,active,edition",
+        )
+        .order("placement")
+        .order("sort_order")
+        .limit(200),
+      supabase
+        .from("banner_events")
+        .select("banner_id,event_type")
+        .limit(100000),
+      supabase
+        .from("sponsors")
+        .select("id,name")
+        .eq("edition", access.currentEdition)
+        .order("name")
+        .limit(200),
+    ]);
 
   const impressions = new Map<string, number>();
   const clicks = new Map<string, number>();
@@ -39,7 +52,11 @@ export default async function AdminBannersPage() {
         subtitle="Espacios de patrocinio con métricas — lo que el equipo comercial vende"
         backHref="/admin"
       />
-      <AdminBannersClient banners={rows} currentEdition={access.currentEdition} />
+      <AdminBannersClient
+        banners={rows}
+        sponsors={(sponsors ?? []) as SponsorOption[]}
+        currentEdition={access.currentEdition}
+      />
     </div>
   );
 }

@@ -6,12 +6,14 @@ import {
   GraduationCap,
   Handshake,
   Image,
+  Megaphone,
   Mic,
   Radio,
   Settings,
   Stamp,
   Store,
   Ticket,
+  UsersRound,
 } from "lucide-react";
 import GlassCard from "@/components/GlassCard";
 import ListItem from "@/components/ListItem";
@@ -28,18 +30,90 @@ const SECTIONS: Array<{
   title: string;
   sub: string;
 }> = [
-  { href: "/admin/evento", icon: ChartColumn, title: "Día del evento", sub: "Dashboard en vivo: conexiones, sellos, sesiones y push" },
-  { href: "/admin/tickets", icon: Ticket, title: "Escarapelas", sub: "Importar CSV, Black y transferencias de titular" },
-  { href: "/admin/agenda", icon: CalendarClock, title: "Agenda", sub: "Charlas, auditorios y horarios" },
-  { href: "/admin/stands", icon: Store, title: "Stands", sub: "Directorio de expositores y solicitudes de cita" },
-  { href: "/admin/ponentes", icon: Mic, title: "Ponentes", sub: "Perfiles y charlas por edición" },
-  { href: "/admin/academia", icon: GraduationCap, title: "Academia", sub: "Pipeline de publicación, colecciones y teaser" },
-  { href: "/admin/alianzas", icon: Handshake, title: "Alianzas", sub: "Ofertas del marketplace y links de referido" },
-  { href: "/admin/pasaporte", icon: Stamp, title: "Pasaporte", sub: "Campañas de sellos, completados y tráfico por stand" },
-  { href: "/admin/qa", icon: Radio, title: "Q&A y encuestas", sub: "Moderación en vivo, votaciones y NPS" },
-  { href: "/admin/notificaciones", icon: Bell, title: "Notificaciones", sub: "Push segmentado y centro de avisos" },
-  { href: "/admin/banners", icon: Image, title: "Banners", sub: "Espacios de patrocinio con métricas e impresiones" },
-  { href: "/admin/config", icon: Settings, title: "Configuración", sub: "WhatsApp Black, reembolsos y parámetros operativos" },
+  {
+    href: "/admin/evento",
+    icon: ChartColumn,
+    title: "Día del evento",
+    sub: "Dashboard en vivo: conexiones, sellos, sesiones y push",
+  },
+  {
+    href: "/admin/tickets",
+    icon: Ticket,
+    title: "Escarapelas",
+    sub: "Importar CSV, Black y transferencias de titular",
+  },
+  {
+    href: "/admin/agenda",
+    icon: CalendarClock,
+    title: "Agenda",
+    sub: "Charlas, auditorios y horarios",
+  },
+  {
+    href: "/admin/stands",
+    icon: Store,
+    title: "Stands",
+    sub: "Directorio de expositores y solicitudes de cita",
+  },
+  {
+    href: "/admin/ponentes",
+    icon: Mic,
+    title: "Ponentes",
+    sub: "Perfiles, charlas y vinculación de cuenta por edición",
+  },
+  {
+    href: "/admin/patrocinadores",
+    icon: Megaphone,
+    title: "Patrocinadores",
+    sub: "Sponsors, staff autorizado y banners vinculados",
+  },
+  {
+    href: "/admin/equipo",
+    icon: UsersRound,
+    title: "Equipo",
+    sub: "Equipo interno Effix: staff, logística, comercial, acreditación",
+  },
+  {
+    href: "/admin/academia",
+    icon: GraduationCap,
+    title: "Academia",
+    sub: "Pipeline de publicación, colecciones y teaser",
+  },
+  {
+    href: "/admin/alianzas",
+    icon: Handshake,
+    title: "Alianzas",
+    sub: "Ofertas del marketplace y links de referido",
+  },
+  {
+    href: "/admin/pasaporte",
+    icon: Stamp,
+    title: "Pasaporte",
+    sub: "Campañas de sellos, completados y tráfico por stand",
+  },
+  {
+    href: "/admin/qa",
+    icon: Radio,
+    title: "Q&A y encuestas",
+    sub: "Moderación en vivo, votaciones y NPS",
+  },
+  {
+    href: "/admin/notificaciones",
+    icon: Bell,
+    title: "Notificaciones",
+    sub: "Push segmentado y centro de avisos",
+  },
+  {
+    href: "/admin/banners",
+    icon: Image,
+    title: "Banners",
+    sub: "Espacios de patrocinio con métricas e impresiones",
+  },
+  {
+    href: "/admin/config",
+    icon: Settings,
+    title: "Configuración",
+    sub: "WhatsApp Black, reembolsos y parámetros operativos",
+  },
 ];
 
 export default function AdminHome() {
@@ -55,7 +129,12 @@ export default function AdminHome() {
           <ListItem
             key={s.href}
             href={s.href}
-            thumb={<s.icon className="h-[18px] w-[18px] text-brand-white" aria-hidden />}
+            thumb={
+              <s.icon
+                className="h-[18px] w-[18px] text-brand-white"
+                aria-hidden
+              />
+            }
             title={s.title}
             subtitle={s.sub}
             right={<span className="text-brand-muted">›</span>}

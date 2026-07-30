@@ -16,6 +16,7 @@ export type AdminBanner = {
   placement: string;
   module_key: string | null;
   sponsor_tier: string | null;
+  sponsor_id: string | null;
   title: string;
   image_url: string;
   link_url: string | null;
@@ -26,12 +27,17 @@ export type AdminBanner = {
   clicks: number;
 };
 
+export type SponsorOption = { id: string; name: string };
+
 const PLACEMENT_OPTIONS = [
-  { value: "splash_sponsor", label: "Splash al abrir — \"Con el apoyo de\" (logo)" },
+  {
+    value: "splash_sponsor",
+    label: 'Splash al abrir — "Con el apoyo de" (logo)',
+  },
   { value: "home_hero", label: "Home — carrusel principal (16:7)" },
   { value: "home_inline", label: "Home — banner intermedio (4:1)" },
   { value: "module_top", label: "Módulo — banner superior (4:1)" },
-  { value: "footer_strip", label: "Franja \"Patrocinan\" (logos)" },
+  { value: "footer_strip", label: 'Franja "Patrocinan" (logos)' },
 ];
 
 /** Preview visual del placement: proporción y contexto donde aparece. */
@@ -44,7 +50,9 @@ function PlacementPreview({ placement }: { placement: string }) {
       </p>
       <div className="mx-auto flex w-28 flex-col gap-1 rounded-[10px] border border-white/15 p-1.5">
         {placement === "splash_sponsor" ? (
-          <div className={`${box} flex aspect-[9/16] items-center justify-center`}>
+          <div
+            className={`${box} flex aspect-[9/16] items-center justify-center`}
+          >
             <div className="h-6 w-10 rounded bg-brand-lav/60" />
           </div>
         ) : (
@@ -93,9 +101,11 @@ const TIER_OPTIONS = [
 
 export default function AdminBannersClient({
   banners,
+  sponsors,
   currentEdition,
 }: {
   banners: AdminBanner[];
+  sponsors: SponsorOption[];
   currentEdition: number;
 }) {
   const [pending, startTransition] = useTransition();
@@ -103,9 +113,13 @@ export default function AdminBannersClient({
   const [placement, setPlacement] = useState("home_hero");
   const [moduleKey, setModuleKey] = useState("agenda");
   const [tier, setTier] = useState("");
+  const [sponsorId, setSponsorId] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const sponsorName = (id: string | null) =>
+    id ? sponsors.find((s) => s.id === id)?.name : undefined;
 
   function run(
     fn: (fd: FormData) => Promise<{ ok?: boolean; error?: string }>,
@@ -125,10 +139,12 @@ export default function AdminBannersClient({
     setNote(null);
     const supabase = createClient();
     const path = `${currentEdition}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-    const { error } = await supabase.storage.from("banners").upload(path, file, {
-      cacheControl: "3600",
-      upsert: false,
-    });
+    const { error } = await supabase.storage
+      .from("banners")
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
     if (error) {
       setNote(`Error subiendo la imagen: ${error.message}`);
       setUploading(false);
@@ -140,13 +156,15 @@ export default function AdminBannersClient({
   }
 
   function exportCsv() {
-    const header = "titulo,placement,modulo,nivel,activo,impresiones,clics,ctr_pct";
+    const header =
+      "titulo,placement,modulo,nivel,patrocinador,activo,impresiones,clics,ctr_pct";
     const lines = banners.map((b) =>
       [
         b.title,
         b.placement,
         b.module_key ?? "",
         b.sponsor_tier ?? "",
+        sponsorName(b.sponsor_id) ?? "",
         b.active ? "si" : "no",
         String(b.impressions),
         String(b.clicks),
@@ -180,6 +198,7 @@ export default function AdminBannersClient({
             run(createBanner, fd, () => {
               form.reset();
               setImageUrl("");
+              setSponsorId("");
             });
           }}
           className="flex flex-col gap-3"
@@ -214,12 +233,28 @@ export default function AdminBannersClient({
             onChange={setTier}
             options={TIER_OPTIONS}
           />
-          <Field label="Link al tocar (opcional)" name="link_url" placeholder="https://…" />
+          <SelectField
+            label="Patrocinador (opcional)"
+            name="sponsor_id"
+            value={sponsorId}
+            onChange={setSponsorId}
+            options={[
+              { value: "", label: "Sin patrocinador" },
+              ...sponsors.map((s) => ({ value: s.id, label: s.name })),
+            ]}
+          />
+          <Field
+            label="Link al tocar (opcional)"
+            name="link_url"
+            placeholder="https://…"
+          />
           <Field label="Orden" name="sort_order" placeholder="100" />
 
           {/* Subida de imagen a Supabase Storage */}
           <div className="flex flex-col gap-2">
-            <p className="text-[11px] font-bold text-brand-dim">Imagen del banner</p>
+            <p className="text-[11px] font-bold text-brand-dim">
+              Imagen del banner
+            </p>
             <input
               ref={fileRef}
               type="file"
@@ -239,7 +274,11 @@ export default function AdminBannersClient({
               >
                 <span className="flex items-center gap-1.5">
                   <ImageUp className="h-4 w-4" aria-hidden />
-                  {uploading ? "Subiendo…" : imageUrl ? "Cambiar imagen" : "Subir imagen"}
+                  {uploading
+                    ? "Subiendo…"
+                    : imageUrl
+                      ? "Cambiar imagen"
+                      : "Subir imagen"}
                 </span>
               </Button>
               {imageUrl && (
@@ -254,14 +293,15 @@ export default function AdminBannersClient({
             {!imageUrl && (
               <p className="flex items-center gap-1 text-[9.5px] text-brand-muted">
                 <TriangleAlert className="h-3 w-3" aria-hidden />
-                Recomendado: 1200×525 (hero), 1200×300 (inline/módulo), logo cuadrado (franja).
+                Recomendado: 1200×525 (hero), 1200×300 (inline/módulo), logo
+                cuadrado (franja).
               </p>
             )}
             {placement === "home_hero" && (
               <div className="flex flex-col gap-1">
                 <p className="text-[10px] font-bold text-brand-dim">
-                  … o pega un link de YouTube (video de fondo sin controles,
-                  ej. el recap de la feria):
+                  … o pega un link de YouTube (video de fondo sin controles, ej.
+                  el recap de la feria):
                 </p>
                 <input
                   value={imageUrl.includes("youtu") ? imageUrl : ""}
@@ -274,7 +314,12 @@ export default function AdminBannersClient({
           </div>
 
           <input type="hidden" name="edition" value={currentEdition} />
-          <Button type="submit" variant="ghost" fullWidth disabled={pending || !imageUrl}>
+          <Button
+            type="submit"
+            variant="ghost"
+            fullWidth
+            disabled={pending || !imageUrl}
+          >
             {pending ? "Guardando…" : "Crear banner (queda inactivo)"}
           </Button>
         </form>
@@ -320,9 +365,14 @@ export default function AdminBannersClient({
                     {b.title}
                   </p>
                   <p className="truncate text-[10px] text-brand-muted">
-                    {PLACEMENT_OPTIONS.find((p) => p.value === b.placement)?.label ?? b.placement}
+                    {PLACEMENT_OPTIONS.find((p) => p.value === b.placement)
+                      ?.label ?? b.placement}
                     {b.module_key ? ` · ${b.module_key}` : ""}
-                    {b.sponsor_tier ? ` · ${b.sponsor_tier}` : ""} · Ed. {b.edition}
+                    {b.sponsor_tier ? ` · ${b.sponsor_tier}` : ""}
+                    {sponsorName(b.sponsor_id)
+                      ? ` · ${sponsorName(b.sponsor_id)}`
+                      : ""}{" "}
+                    · Ed. {b.edition}
                   </p>
                 </div>
                 <Badge dot={b.active}>{b.active ? "Activo" : "Inactivo"}</Badge>
@@ -339,7 +389,11 @@ export default function AdminBannersClient({
               <div className="flex flex-wrap gap-2">
                 <form action={(fd) => run(toggleBanner, fd)}>
                   <input type="hidden" name="id" value={b.id} />
-                  <input type="hidden" name="active" value={b.active ? "true" : "false"} />
+                  <input
+                    type="hidden"
+                    name="active"
+                    value={b.active ? "true" : "false"}
+                  />
                   <button className="min-h-9 rounded-full border border-white/25 px-3 text-[9.5px] font-bold text-brand-dim">
                     {b.active ? "Desactivar" : "Activar"}
                   </button>
@@ -347,7 +401,11 @@ export default function AdminBannersClient({
                 <form
                   action={(fd) => run(deleteBanner, fd)}
                   onSubmit={(e) => {
-                    if (!confirm("¿Eliminar este banner y sus métricas? No se puede deshacer."))
+                    if (
+                      !confirm(
+                        "¿Eliminar este banner y sus métricas? No se puede deshacer.",
+                      )
+                    )
                       e.preventDefault();
                   }}
                 >
