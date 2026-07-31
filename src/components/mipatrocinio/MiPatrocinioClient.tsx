@@ -16,6 +16,7 @@ const TIER_LABEL: Record<SponsorInfo["tier"], string> = {
   plata: "Plata",
   oro: "Oro",
   diamante: "Diamante",
+  black: "Black",
 };
 
 const TIER_RANK: Record<SponsorInfo["tier"], number> = {
@@ -23,6 +24,7 @@ const TIER_RANK: Record<SponsorInfo["tier"], number> = {
   plata: 1,
   oro: 2,
   diamante: 3,
+  black: 4,
 };
 
 /** Mismas etiquetas en español que admin/banners (AdminBannersClient). */
@@ -74,7 +76,7 @@ export default function MiPatrocinioClient({
       <SectionTitle>Tus marcas patrocinadoras ({sponsors.length})</SectionTitle>
       <div className="flex flex-col gap-2">
         {ordered.map((s) => {
-          const destacado = s.tier === "diamante";
+          const destacado = TIER_RANK[s.tier] >= TIER_RANK.diamante;
           return (
             <GlassCard
               key={s.id}
@@ -156,9 +158,7 @@ export default function MiPatrocinioClient({
               <div className="flex items-center gap-4 text-[10px] font-bold text-brand-dim">
                 <span>{m.impressions} impresiones</span>
                 <span>{m.clicks} clics</span>
-                <span className="text-brand-lav">
-                  CTR {m.ctr.toFixed(1)}%
-                </span>
+                <span className="text-brand-lav">CTR {m.ctr.toFixed(1)}%</span>
               </div>
             </GlassCard>
           ))}

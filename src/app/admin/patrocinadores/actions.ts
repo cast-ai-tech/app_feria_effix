@@ -6,7 +6,7 @@ import { FALLBACK_EDITION } from "@/lib/editions";
 
 type Result = { ok: boolean; error?: string };
 
-const SPONSOR_TIERS = ["basico", "plata", "oro", "diamante"];
+const SPONSOR_TIERS = ["basico", "plata", "oro", "diamante", "black"];
 
 function readSponsor(formData: FormData) {
   const edition = parseInt((formData.get("edition") as string) || "", 10);

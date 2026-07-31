@@ -13,7 +13,7 @@ const PLACEMENTS = [
   "footer_strip",
 ];
 const MODULES = ["agenda", "stands", "ponentes", "academia", "alianzas"];
-const SPONSOR_TIERS = ["basico", "plata", "oro", "diamante"];
+const SPONSOR_TIERS = ["basico", "plata", "oro", "diamante", "black"];
 
 function readBanner(formData: FormData) {
   const placement = (formData.get("placement") as string) || "";

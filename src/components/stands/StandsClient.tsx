@@ -47,6 +47,7 @@ const TIER_RANK: Record<string, number> = {
   plata: 1,
   oro: 2,
   diamante: 3,
+  black: 4,
 };
 
 function tierAtLeast(tier: string, min: keyof typeof TIER_RANK): boolean {
@@ -85,7 +86,8 @@ export default function StandsClient({
   const [message, setMessage] = useState("");
   const [intent, setIntent] = useState("comprar");
   const [busy, setBusy] = useState(false);
-  const [meetings, setMeetings] = useState<Record<string, MyMeeting>>(myMeetings);
+  const [meetings, setMeetings] =
+    useState<Record<string, MyMeeting>>(myMeetings);
   const [note, setNote] = useState<string | null>(null);
 
   const categories = useMemo(() => {
@@ -98,7 +100,8 @@ export default function StandsClient({
   const ordered = useMemo(
     () =>
       [...stands].sort((a, b) => {
-        const d = (TIER_RANK[b.tier] === 3 ? 1 : 0) - (TIER_RANK[a.tier] === 3 ? 1 : 0);
+        const d =
+          (TIER_RANK[b.tier] === 3 ? 1 : 0) - (TIER_RANK[a.tier] === 3 ? 1 : 0);
         return d !== 0 ? d : a.name.localeCompare(b.name);
       }),
     [stands],
@@ -167,11 +170,18 @@ export default function StandsClient({
 
       {categories.length > 0 && (
         <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
-          <FilterChip active={category === "__all__"} onClick={() => setCategory("__all__")}>
+          <FilterChip
+            active={category === "__all__"}
+            onClick={() => setCategory("__all__")}
+          >
             Todas
           </FilterChip>
           {categories.map((c) => (
-            <FilterChip key={c} active={category === c} onClick={() => setCategory(c)}>
+            <FilterChip
+              key={c}
+              active={category === c}
+              onClick={() => setCategory(c)}
+            >
               {c}
             </FilterChip>
           ))}
@@ -192,7 +202,7 @@ export default function StandsClient({
         <div className="grid grid-cols-1 items-start gap-2 md:grid-cols-2">
           {filtered.map((s) => {
             const meeting = meetings[s.id];
-            const destacado = s.tier === "diamante";
+            const destacado = tierAtLeast(s.tier, "diamante");
             return (
               <GlassCard
                 key={s.id}
@@ -202,7 +212,14 @@ export default function StandsClient({
                 }`}
               >
                 <ListItem
-                  thumb={s.category?.[0]?.toUpperCase() ?? (<Store className="h-[18px] w-[18px] text-brand-white" aria-hidden />)}
+                  thumb={
+                    s.category?.[0]?.toUpperCase() ?? (
+                      <Store
+                        className="h-[18px] w-[18px] text-brand-white"
+                        aria-hidden
+                      />
+                    )
+                  }
                   title={
                     destacado ? (
                       <span>
@@ -259,7 +276,8 @@ export default function StandsClient({
 
                 {/* Acciones por nivel */}
                 {(tierAtLeast(s.tier, "plata") && s.video_url) ||
-                (tierAtLeast(s.tier, "oro") && (s.catalog_url || s.whatsapp_url)) ? (
+                (tierAtLeast(s.tier, "oro") &&
+                  (s.catalog_url || s.whatsapp_url)) ? (
                   <div className="flex flex-wrap gap-2 px-[14px] pb-2">
                     {tierAtLeast(s.tier, "plata") && s.video_url && (
                       <a
@@ -268,7 +286,8 @@ export default function StandsClient({
                         rel="noopener noreferrer"
                         className="rounded-full border border-white/30 px-3 py-1 text-[9.5px] font-bold text-brand-white"
                       >
-                        <Play className="mr-1 inline h-3 w-3" aria-hidden />Video
+                        <Play className="mr-1 inline h-3 w-3" aria-hidden />
+                        Video
                       </a>
                     )}
                     {tierAtLeast(s.tier, "oro") && s.catalog_url && (
@@ -278,7 +297,11 @@ export default function StandsClient({
                         rel="noopener noreferrer"
                         className="rounded-full border border-white/30 px-3 py-1 text-[9.5px] font-bold text-brand-white"
                       >
-                        <ShoppingBag className="mr-1 inline h-3 w-3" aria-hidden />Catálogo
+                        <ShoppingBag
+                          className="mr-1 inline h-3 w-3"
+                          aria-hidden
+                        />
+                        Catálogo
                       </a>
                     )}
                     {tierAtLeast(s.tier, "oro") && s.whatsapp_url && (
@@ -288,7 +311,11 @@ export default function StandsClient({
                         rel="noopener noreferrer"
                         className="rounded-full border border-emerald-400/40 px-3 py-1 text-[9.5px] font-bold text-emerald-300"
                       >
-                        <MessageCircle className="mr-1 inline h-3 w-3" aria-hidden />WhatsApp
+                        <MessageCircle
+                          className="mr-1 inline h-3 w-3"
+                          aria-hidden
+                        />
+                        WhatsApp
                       </a>
                     )}
                   </div>

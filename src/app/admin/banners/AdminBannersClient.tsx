@@ -97,6 +97,7 @@ const TIER_OPTIONS = [
   { value: "plata", label: "Plata" },
   { value: "oro", label: "Oro" },
   { value: "diamante", label: "Diamante" },
+  { value: "black", label: "Black" },
 ];
 
 export default function AdminBannersClient({

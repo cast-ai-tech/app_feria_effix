@@ -32,27 +32,23 @@ async function assertStandStaff(standId: string) {
 /**
  * Campos editables según el nivel de patrocinio (parte del producto que
  * se vende): básico = descripción+logo; plata = +galería y video;
- * oro/diamante = +catálogo y WhatsApp.
+ * oro/diamante/black = +catálogo y WhatsApp.
  */
+const FULL_FIELDS = [
+  "description",
+  "logo_url",
+  "gallery_urls",
+  "video_url",
+  "catalog_url",
+  "whatsapp_url",
+];
+
 const TIER_FIELDS: Record<string, string[]> = {
   basico: ["description", "logo_url"],
   plata: ["description", "logo_url", "gallery_urls", "video_url"],
-  oro: [
-    "description",
-    "logo_url",
-    "gallery_urls",
-    "video_url",
-    "catalog_url",
-    "whatsapp_url",
-  ],
-  diamante: [
-    "description",
-    "logo_url",
-    "gallery_urls",
-    "video_url",
-    "catalog_url",
-    "whatsapp_url",
-  ],
+  oro: FULL_FIELDS,
+  diamante: FULL_FIELDS,
+  black: FULL_FIELDS,
 };
 
 export async function updateMyStand(formData: FormData): Promise<Result> {

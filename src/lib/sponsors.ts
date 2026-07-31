@@ -11,7 +11,7 @@ export type SponsorInfo = {
   name: string;
   logo_url: string | null;
   website: string | null;
-  tier: "basico" | "plata" | "oro" | "diamante";
+  tier: "basico" | "plata" | "oro" | "diamante" | "black";
   edition: number;
   active: boolean;
 };

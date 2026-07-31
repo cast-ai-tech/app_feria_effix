@@ -58,12 +58,11 @@ function generateSecret(bytes = 20) {
 // --- Usuarios de prueba y sus roles --------------------------------------
 // ticket: tier de boleta | team: rol en team_members | speaker: crea ficha
 // sponsor: staff del patrocinador | stand: staff de stand demo
-// Un usuario por rol (QA Fase 28). Niveles de patrocinio del sistema:
-// basico | plata | oro | diamante ("Patrocinio Black" es el nombre comercial
-// del paquete tope; su tier real es diamante).
+// Un usuario por rol (QA Fase 28). Niveles de patrocinio del sistema
+// desde la Fase 29: basico | plata | oro | diamante | black.
 const USERS = [
   { name: "Frijolito", email: "juanesteban.raigoza@gmail.com", ticket: "general" },
-  { name: "Sebas Castro EFFIX", email: "sebascastro@outlook.com", sponsor: { name: "Patrocinio Black (demo)", tier: "diamante" } },
+  { name: "Sebas Castro EFFIX", email: "sebascastro@outlook.com", sponsor: { name: "Patrocinio Black (demo)", tier: "black" } },
   { name: "Emmanuel Páginas Effi", email: "desarrollo1.effisystems@gmail.com", sponsor: { name: "Grupo Effi", tier: "diamante" } },
   { name: "Joaquin Rojas Peña", email: "contacto@joakoestratega.com", speaker: true },
   { name: "Susana R Montoya", email: "susanarmontoya@gmail.com", ticket: "vip" },

@@ -54,6 +54,7 @@ const TIER_OPTIONS = [
   { value: "plata", label: "Plata" },
   { value: "oro", label: "Oro" },
   { value: "diamante", label: "Diamante" },
+  { value: "black", label: "Black" },
 ];
 
 const INTENT_LABEL: Record<string, string> = {
@@ -111,7 +112,10 @@ function StandRow({
           </p>
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
-          <Badge>{TIER_OPTIONS.find((t) => t.value === stand.tier)?.label ?? stand.tier}</Badge>
+          <Badge>
+            {TIER_OPTIONS.find((t) => t.value === stand.tier)?.label ??
+              stand.tier}
+          </Badge>
           <button
             onClick={() => setOpen(!open)}
             className="rounded-full border border-white/25 px-3 py-1 text-[9.5px] font-bold text-brand-dim"
@@ -142,7 +146,8 @@ function StandRow({
           {/* Staff del stand */}
           <div className="flex flex-col gap-2">
             <p className="text-[11px] font-bold text-brand-dim">
-              Staff autorizado ({staff.length}) — escanean visitantes y usan /mi-stand
+              Staff autorizado ({staff.length}) — escanean visitantes y usan
+              /mi-stand
             </p>
             {staff.map((m) => (
               <div
@@ -167,18 +172,27 @@ function StandRow({
                 placeholder="correo@delstaff.com"
                 className="w-full rounded-[14px] border border-white/15 bg-white/5 px-4 py-2.5 text-[12px] text-brand-white placeholder:text-brand-muted outline-none focus:border-brand-lav"
               />
-              <Button variant="ghost" onClick={addStaff} disabled={pending || !staffEmail}>
+              <Button
+                variant="ghost"
+                onClick={addStaff}
+                disabled={pending || !staffEmail}
+              >
                 Agregar
               </Button>
             </div>
           </div>
 
           <form
-                action={(fd) => run(deleteStand, fd)}
-                onSubmit={(e) => {
-                  if (!confirm("¿Eliminar este stand? Se borran también sus sellos, leads y citas. Esta acción no se puede deshacer.")) e.preventDefault();
-                }}
-              >
+            action={(fd) => run(deleteStand, fd)}
+            onSubmit={(e) => {
+              if (
+                !confirm(
+                  "¿Eliminar este stand? Se borran también sus sellos, leads y citas. Esta acción no se puede deshacer.",
+                )
+              )
+                e.preventDefault();
+            }}
+          >
             <input type="hidden" name="id" value={stand.id} />
             <button className="rounded-full border border-red-400/40 px-3 py-1 text-[9.5px] font-bold text-red-300">
               Eliminar stand
@@ -267,10 +281,27 @@ export default function AdminStandsClient({
           }}
           className="flex flex-col gap-3"
         >
-          <Field label="Nombre" name="name" placeholder="Nombre del expositor" required />
-          <Field label="Categoría" name="category" placeholder="Ej. E-commerce" />
-          <Field label="Número de stand" name="stand_number" placeholder="Ej. B12" />
-          <Field label="Zona del mapa" name="zone" placeholder="Ej. Pabellón Azul" />
+          <Field
+            label="Nombre"
+            name="name"
+            placeholder="Nombre del expositor"
+            required
+          />
+          <Field
+            label="Categoría"
+            name="category"
+            placeholder="Ej. E-commerce"
+          />
+          <Field
+            label="Número de stand"
+            name="stand_number"
+            placeholder="Ej. B12"
+          />
+          <Field
+            label="Zona del mapa"
+            name="zone"
+            placeholder="Ej. Pabellón Azul"
+          />
           <SelectField
             label="Nivel de patrocinio"
             name="tier"
@@ -278,7 +309,13 @@ export default function AdminStandsClient({
             onChange={setTier}
             options={TIER_OPTIONS}
           />
-          <TextAreaField label="Descripción" name="description" value={description} onChange={setDescription} placeholder="Qué ofrece" />
+          <TextAreaField
+            label="Descripción"
+            name="description"
+            value={description}
+            onChange={setDescription}
+            placeholder="Qué ofrece"
+          />
           <input type="hidden" name="edition" defaultValue={currentEdition} />
           <Button type="submit" variant="ghost" fullWidth disabled={pending}>
             {pending ? "Guardando…" : "Crear stand"}
@@ -298,16 +335,24 @@ export default function AdminStandsClient({
       )}
 
       {/* Citas pendientes (respaldo del admin; el expositor gestiona en /mi-stand) */}
-      <SectionTitle>Solicitudes de cita ({pendingMeetings.length} pendientes)</SectionTitle>
+      <SectionTitle>
+        Solicitudes de cita ({pendingMeetings.length} pendientes)
+      </SectionTitle>
       {pendingMeetings.length === 0 ? (
-        <p className="text-[11px] text-brand-muted">Sin solicitudes pendientes.</p>
+        <p className="text-[11px] text-brand-muted">
+          Sin solicitudes pendientes.
+        </p>
       ) : (
         <div className="flex flex-col gap-2">
           {pendingMeetings.map((m) => (
             <GlassCard key={m.id} className="flex flex-col gap-2 p-4">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-[12px] font-extrabold text-brand-white">{m.stand_name}</p>
-                {m.intent && <Badge>{INTENT_LABEL[m.intent] ?? m.intent}</Badge>}
+                <p className="text-[12px] font-extrabold text-brand-white">
+                  {m.stand_name}
+                </p>
+                {m.intent && (
+                  <Badge>{INTENT_LABEL[m.intent] ?? m.intent}</Badge>
+                )}
               </div>
               {m.message && (
                 <p className="text-[10.5px] text-brand-muted">“{m.message}”</p>

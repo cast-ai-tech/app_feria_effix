@@ -58,6 +58,7 @@ const TIER_LABEL: Record<string, string> = {
   plata: "Plata",
   oro: "Oro",
   diamante: "Diamante",
+  black: "Black",
 };
 
 const INTENT_LABEL: Record<string, string> = {
@@ -73,12 +74,14 @@ const INTENT_LABEL: Record<string, string> = {
  *   plata    → + galería y video;         leads: lista visible
  *   oro      → + catálogo y WhatsApp;     leads: lista + export CSV
  *   diamante → todo lo de oro + posición destacada en el directorio
+ *   black    → nivel tope (F29): todo lo de diamante
  */
 const TIER_RANK: Record<string, number> = {
   basico: 0,
   plata: 1,
   oro: 2,
   diamante: 3,
+  black: 4,
 };
 
 function tierAtLeast(tier: string, min: keyof typeof TIER_RANK): boolean {
@@ -114,7 +117,9 @@ function buildLeadsCsv(rows: StandLead[]): string {
 function LockedField({ label, needed }: { label: string; needed: string }) {
   return (
     <div className="rounded-[14px] border border-dashed border-white/15 px-4 py-3">
-      <p className="flex items-center gap-1.5 text-[11px] font-bold text-brand-dim"><Lock className="h-3.5 w-3.5" aria-hidden /> {label}</p>
+      <p className="flex items-center gap-1.5 text-[11px] font-bold text-brand-dim">
+        <Lock className="h-3.5 w-3.5" aria-hidden /> {label}
+      </p>
       <p className="text-[9.5px] text-brand-muted">
         Disponible desde el nivel {needed}. Contacta al equipo comercial de la
         feria para subir tu patrocinio.
@@ -153,7 +158,11 @@ function PerfilTab({ stand }: { stand: MyStand }) {
           <Badge>{TIER_LABEL[stand.tier] ?? stand.tier}</Badge>
         </div>
         <p className="text-[10px] text-brand-muted">
-          {[stand.category, stand.stand_number && `Stand ${stand.stand_number}`, stand.zone]
+          {[
+            stand.category,
+            stand.stand_number && `Stand ${stand.stand_number}`,
+            stand.zone,
+          ]
             .filter(Boolean)
             .join(" · ") || "—"}{" "}
           · Ed. {stand.edition}
@@ -232,7 +241,13 @@ function PerfilTab({ stand }: { stand: MyStand }) {
   );
 }
 
-function ReunionesTab({ stand, meetings }: { stand: MyStand; meetings: StandMeetingRow[] }) {
+function ReunionesTab({
+  stand,
+  meetings,
+}: {
+  stand: MyStand;
+  meetings: StandMeetingRow[];
+}) {
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState<string | null>(null);
   const [slotById, setSlotById] = useState<Record<string, string>>({});
@@ -281,12 +296,16 @@ function ReunionesTab({ stand, meetings }: { stand: MyStand; meetings: StandMeet
               {m.requesterName}
             </p>
             <p className="text-[10px] text-brand-muted">
-              {[m.requesterRole, m.requesterCountry].filter(Boolean).join(" · ") || "—"}
+              {[m.requesterRole, m.requesterCountry]
+                .filter(Boolean)
+                .join(" · ") || "—"}
             </p>
           </div>
           {m.intent && <Badge>{INTENT_LABEL[m.intent] ?? m.intent}</Badge>}
           {m.message && (
-            <p className="text-[10.5px] italic text-brand-muted">“{m.message}”</p>
+            <p className="text-[10.5px] italic text-brand-muted">
+              “{m.message}”
+            </p>
           )}
           <input
             value={slotById[m.id] ?? ""}
@@ -334,7 +353,9 @@ function ReunionesTab({ stand, meetings }: { stand: MyStand; meetings: StandMeet
                 </p>
               )}
               {m.slotNote && (
-                <p className="text-[10px] text-brand-dim">Franja: {m.slotNote}</p>
+                <p className="text-[10px] text-brand-dim">
+                  Franja: {m.slotNote}
+                </p>
               )}
             </GlassCard>
           ))}
@@ -386,8 +407,9 @@ function LeadsTab({ stand, leads }: { stand: MyStand; leads: StandLead[] }) {
       {!canSeeList ? (
         <GlassCard className="p-4 text-center">
           <p className="text-[11px] font-bold text-brand-dim">
-            <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden />La lista de leads con contacto está disponible desde el nivel
-            Plata (y el export CSV desde Oro).
+            <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden />
+            La lista de leads con contacto está disponible desde el nivel Plata
+            (y el export CSV desde Oro).
           </p>
           <p className="mt-1 text-[10px] text-brand-muted">
             Contacta al equipo comercial de la feria para subir tu patrocinio.
@@ -407,14 +429,16 @@ function LeadsTab({ stand, leads }: { stand: MyStand; leads: StandLead[] }) {
                 onClick={exportCsv}
                 className="flex-shrink-0 rounded-full border border-white/35 px-3 py-2 text-[10px] font-extrabold text-brand-white"
               >
-                <Download className="mr-1 inline h-3 w-3" aria-hidden />CSV
+                <Download className="mr-1 inline h-3 w-3" aria-hidden />
+                CSV
               </button>
             ) : (
               <span
                 title="Export disponible desde nivel Oro"
                 className="flex-shrink-0 rounded-full border border-white/15 px-3 py-2 text-[10px] font-bold text-brand-dim"
               >
-                <Lock className="mr-1 inline h-3 w-3" aria-hidden />CSV
+                <Lock className="mr-1 inline h-3 w-3" aria-hidden />
+                CSV
               </span>
             )}
           </div>
@@ -426,10 +450,7 @@ function LeadsTab({ stand, leads }: { stand: MyStand; leads: StandLead[] }) {
             </p>
           ) : (
             shown.map((l) => (
-              <GlassCard
-                key={l.profileId}
-                className="flex flex-col gap-1 p-4"
-              >
+              <GlassCard key={l.profileId} className="flex flex-col gap-1 p-4">
                 <p className="text-[12px] font-extrabold text-brand-white">
                   {l.fullName ?? "Asistente"}
                 </p>

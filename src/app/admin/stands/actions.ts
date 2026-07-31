@@ -6,7 +6,7 @@ import { FALLBACK_EDITION } from "@/lib/editions";
 
 type Result = { ok: boolean; error?: string };
 
-const STAND_TIERS = ["basico", "plata", "oro", "diamante"];
+const STAND_TIERS = ["basico", "plata", "oro", "diamante", "black"];
 
 function readStand(formData: FormData) {
   const edition = parseInt((formData.get("edition") as string) || "", 10);
@@ -14,7 +14,8 @@ function readStand(formData: FormData) {
   return {
     name: ((formData.get("name") as string) || "").trim(),
     category: ((formData.get("category") as string) || "").trim() || null,
-    stand_number: ((formData.get("stand_number") as string) || "").trim() || null,
+    stand_number:
+      ((formData.get("stand_number") as string) || "").trim() || null,
     description: ((formData.get("description") as string) || "").trim() || null,
     zone: ((formData.get("zone") as string) || "").trim() || null,
     tier: STAND_TIERS.includes(tier) ? tier : "basico",
