@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { storage } from "@/lib/platform/storage";
+import { isNativeApp } from "@/lib/platform/native";
 
 /**
  * Aviso para instalar la app (PWA) en móviles (Fase 27). El manifest y el
@@ -63,7 +64,7 @@ export default function InstallAppBanner() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (isStandalone()) return;
+    if (isStandalone() || isNativeApp()) return;
 
     const detected = detectPlatform();
     if (detected === "desktop") return; // solo móviles

@@ -47,15 +47,23 @@ export default function AppOpenIntro() {
     <button
       aria-label="Continuar"
       onClick={() => setVisible(false)}
-      className="fixed inset-0 z-[70] flex w-full items-center justify-center bg-black"
+      className="fixed inset-0 z-[70] flex w-full items-center justify-center overflow-hidden bg-black"
     >
+      <Image
+        src="/brand/intro-bg.jpg"
+        alt=""
+        fill
+        sizes="100vw"
+        className="object-cover"
+        priority
+      />
       <div className="intro-logo relative h-40 w-72">
         <Image
-          src="/brand/logo-cromado.png"
+          src="/brand/logo-cromado-v2.png"
           alt="Feria EffiX"
           fill
           sizes="288px"
-          className="object-contain"
+          className="intro-logo-img object-contain"
           priority
         />
       </div>

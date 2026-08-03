@@ -32,4 +32,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Escaneo de QR (Credencial, Pasaporte de stands) vía getUserMedia en el WebView -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Notificaciones push, obligatorio declararlo desde Android 13 (API 33) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

@@ -80,7 +80,7 @@ const BANNERS = [
   { placement: "footer_strip", title: "Aliado demo A", image_url: url("demo/logo1.jpg"), link_url: null, sort_order: 10, active: false },
   { placement: "footer_strip", title: "Aliado demo B", image_url: url("demo/logo2.jpg"), link_url: null, sort_order: 20, active: false },
   // ── splash_sponsor: Grupo Effi (organizador) ──
-  { placement: "splash_sponsor", title: "Grupo Effi", image_url: url("brand/logo-grupo-effi.webp"), link_url: "https://grupoeffi.com", sort_order: 10, active: true },
+  { placement: "splash_sponsor", title: "Grupo Effi", image_url: url("brand/logo-grupo-effi.webp"), link_url: "https://grupoeffi.com", sort_order: 10, active: false },
   { placement: "splash_sponsor", title: "Con el apoyo demo", image_url: url("demo/logo1.jpg"), link_url: null, sort_order: 10, active: false },
 ];
 

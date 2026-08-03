@@ -17,10 +17,10 @@ const config: CapacitorConfig = {
   appName: "Feria Effix",
   webDir: "capacitor-shell",
   backgroundColor: "#000000",
-  // server: {
-  //   url: "https://app.feriaeffix.com",
-  //   cleartext: false,
-  // },
+  server: {
+    url: "https://app.feriaeffix.com",
+    cleartext: false,
+  },
 };
 
 export default config;

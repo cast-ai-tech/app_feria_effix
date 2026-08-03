@@ -7,9 +7,11 @@ import GlassCard from "@/components/GlassCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Field, SelectField, TextAreaField } from "@/components/Field";
 import { UserRound } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_ROLES, OTHER_ROLE_VALUE } from "@/lib/roles";
 import { clearCachedTickets } from "@/lib/ticketStore";
+import { deleteOwnAccount } from "@/lib/accountDeletion";
 
 type ProfileData = {
   full_name: string;
@@ -42,6 +44,11 @@ export default function ProfileForm({
   const [signingOut, setSigningOut] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // ¿El rol guardado está fuera de la lista? -> tratarlo como "Otro".
   const knownRole = (list: RoleOption[]) =>
@@ -125,6 +132,22 @@ export default function ProfileForm({
     router.refresh();
   }
 
+  async function handleDeleteAccount() {
+    setDeleteError(null);
+    setDeleting(true);
+    const { error: deleteErr } = await deleteOwnAccount();
+    if (deleteErr) {
+      setDeleting(false);
+      setDeleteError(deleteErr);
+      return;
+    }
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    await clearCachedTickets();
+    router.push("/");
+    router.refresh();
+  }
+
   const roleSelectValue = useCustomRole ? OTHER_ROLE_VALUE : data.role;
 
   return (
@@ -199,8 +222,8 @@ export default function ProfileForm({
           placeholder="El correo con el que compraste en La Tiquetera"
         />
         <p className="-mt-1 text-[10px] leading-relaxed text-brand-muted">
-          Si compraste tu boleta con un correo distinto al de tu cuenta,
-          ponlo aquí para poder vincularla (Fase 3).
+          Si compraste tu boleta con un correo distinto al de tu cuenta, ponlo
+          aquí para poder vincularla (Fase 3).
         </p>
       </GlassCard>
 
@@ -292,6 +315,84 @@ export default function ProfileForm({
       >
         {signingOut ? "Cerrando sesión…" : "Cerrar sesión"}
       </Button>
+
+      <p className="text-center text-[10px] text-brand-muted">
+        <Link href="/terminos" className="underline">
+          Términos de servicio
+        </Link>{" "}
+        ·{" "}
+        <Link href="/privacidad" className="underline">
+          Política de privacidad
+        </Link>
+      </p>
+
+      <GlassCard className="flex flex-col gap-3 border-red-500/25 p-5">
+        <SectionTitle className="mt-0">Zona de riesgo</SectionTitle>
+        {!confirmingDelete ? (
+          <>
+            <p className="text-[10.5px] leading-relaxed text-brand-muted">
+              Elimina tu cuenta y todos tus datos personales (perfil,
+              conexiones, agenda, progreso de Academia, respuestas de encuestas,
+              sellos de pasaporte). Es permanente y no se puede deshacer.
+              Boletas y otros registros del evento se conservan anonimizados por
+              requisitos operativos.
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              fullWidth
+              className="border-red-500/50 text-red-300"
+              onClick={() => setConfirmingDelete(true)}
+            >
+              Eliminar mi cuenta
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-[10.5px] leading-relaxed text-brand-muted">
+              Escribe <strong className="text-red-300">ELIMINAR</strong> para
+              confirmar el borrado permanente de tu cuenta.
+            </p>
+            <Field
+              label="Confirmación"
+              name="delete_confirm"
+              value={deleteConfirmText}
+              onChange={setDeleteConfirmText}
+              placeholder="ELIMINAR"
+            />
+            {deleteError && (
+              <p className="text-[11px] font-semibold text-red-300">
+                {deleteError}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
+                onClick={() => {
+                  setConfirmingDelete(false);
+                  setDeleteConfirmText("");
+                  setDeleteError(null);
+                }}
+                disabled={deleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
+                className="border-red-500/50 text-red-300"
+                onClick={handleDeleteAccount}
+                disabled={deleting || deleteConfirmText !== "ELIMINAR"}
+              >
+                {deleting ? "Eliminando…" : "Confirmar borrado"}
+              </Button>
+            </div>
+          </>
+        )}
+      </GlassCard>
     </form>
   );
 }

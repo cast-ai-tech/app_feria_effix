@@ -56,8 +56,7 @@ export default function RegistroPage() {
     setError(null);
     setLoading(true);
 
-    const finalRole =
-      role === OTHER_ROLE_VALUE ? customRole.trim() : role;
+    const finalRole = role === OTHER_ROLE_VALUE ? customRole.trim() : role;
 
     const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({
@@ -216,6 +215,18 @@ export default function RegistroPage() {
           <Link href="/ingresar" className="font-bold text-brand-white">
             Inicia sesión
           </Link>
+        </p>
+
+        <p className="mt-3 text-center text-[10px] leading-relaxed text-brand-muted">
+          Al crear una cuenta aceptas los{" "}
+          <Link href="/terminos" className="underline">
+            Términos de servicio
+          </Link>{" "}
+          y la{" "}
+          <Link href="/privacidad" className="underline">
+            Política de privacidad
+          </Link>
+          .
         </p>
       </GlassCard>
     </div>

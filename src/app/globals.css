@@ -184,19 +184,107 @@ body {
   }
 }
 
-/* Fase 27 — Entrada del logo en el intro de apertura de la app. */
+/*
+  Fase 30 — Entrada "cibernética" del logo en el intro de apertura:
+  glitch con separación RGB (drop-shadow cian/magenta, on-brand con
+  --glow-cian) + barrido de escaneo enmascarado a la silueta del logo
+  (::after con mask-image = el propio PNG, así el barrido no se sale
+  de las letras) + brillo cian respirando una vez que se asienta.
+*/
 .intro-logo {
-  animation: intro-logo-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  position: relative;
+  animation: intro-logo-glitch 1100ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes intro-logo-in {
+@keyframes intro-logo-glitch {
   0% {
     opacity: 0;
-    transform: scale(0.82);
+    transform: scale(0.86);
+    filter: brightness(2.6) saturate(0) blur(4px);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(0.9);
+    filter: brightness(2) saturate(0.2) blur(1px);
+  }
+  22% {
+    transform: translateX(-2.5%) scale(0.97);
+    filter: brightness(1.5) blur(0) drop-shadow(3px 0 0 rgba(36, 138, 204, 0.9))
+      drop-shadow(-3px 0 0 rgba(255, 0, 200, 0.5));
+  }
+  30% {
+    transform: translateX(2%) scale(1.02);
+    filter: brightness(1.15) drop-shadow(-2px 0 0 rgba(36, 138, 204, 0.7))
+      drop-shadow(2px 0 0 rgba(255, 0, 200, 0.35));
+  }
+  40% {
+    transform: translateX(-1%) scale(0.995);
+    filter: brightness(1.25) drop-shadow(2px 0 0 rgba(36, 138, 204, 0.55));
+  }
+  52%,
+  100% {
+    transform: translateX(0) scale(1);
+    filter: brightness(1) drop-shadow(0 0 0 transparent);
+  }
+}
+
+.intro-logo-img {
+  animation: intro-logo-glow 1.8s ease-in-out 1100ms infinite;
+}
+
+@keyframes intro-logo-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(36, 138, 204, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(36, 138, 204, 0.6));
+  }
+}
+
+/* Barrido de escaneo — enmascarado a la silueta del propio logo. */
+.intro-logo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(36, 138, 204, 0.85) 46%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(36, 138, 204, 0.85) 54%,
+    transparent 100%
+  );
+  background-size: 100% 280%;
+  background-position: 0 -110%;
+  -webkit-mask-image: url("/brand/logo-cromado-v2.png");
+  mask-image: url("/brand/logo-cromado-v2.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0;
+  animation: intro-scan-sweep 900ms cubic-bezier(0.16, 1, 0.3, 1) 250ms both;
+}
+
+@keyframes intro-scan-sweep {
+  0% {
+    background-position: 0 -110%;
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.9;
   }
   100% {
-    opacity: 1;
-    transform: scale(1);
+    background-position: 0 110%;
+    opacity: 0;
   }
 }
 
@@ -280,8 +368,18 @@ body {
   .tier-shine::after,
   .live-dot,
   .btn-glow,
-  .intro-logo {
+  .intro-logo,
+  .intro-logo-img,
+  .intro-logo::after {
     animation: none;
+  }
+  .intro-logo::after {
+    display: none;
+  }
+  .intro-logo {
+    opacity: 1;
+    transform: none;
+    filter: none;
   }
 }
 
