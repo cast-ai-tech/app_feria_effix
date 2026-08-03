@@ -11,15 +11,22 @@ import {
 } from "@/lib/accessRules";
 
 /**
- * Control de acceso por módulo — Modelo de acceso del Master Prompt (§5).
+ * Control de acceso por módulo — Modelo de acceso del Master Prompt (§5),
+ * ajustado en Fase 30: Agenda, Mapa y el tablón de Avisos generales pasan a
+ * abiertos sin sesión (bajar fricción de descubrimiento); lo que sí exige
+ * datos personales (Mi Agenda, boleta, credencial) sigue pidiendo cuenta.
  *
- * | Módulo                | Requiere boleta vigente | Alumni (de por vida) | Abierto |
- * |-----------------------|:----------------------:|:--------------------:|:-------:|
- * | Tickets / Agenda /    |                        |                      |         |
- * |  Mapa / Stands /      |          Sí            |          —           |   No    |
- * |  Ponentes / Alianzas  |                        |                      |         |
- * | Academia              |          —             |          Sí          |   No    |
- * | Comunidad             |          —             |          —           |   Sí    |
+ * | Módulo                  | Requiere boleta vigente | Alumni (de por vida) | Abierto |
+ * |--------------------------|:----------------------:|:--------------------:|:-------:|
+ * | Tickets / Stands /       |                        |                      |         |
+ * |  Ponentes / Alianzas     |          Sí            |          —           |   No    |
+ * | Academia                 |          —             |          Sí          |   No    |
+ * | Comunidad                |          —             |          —           |   Sí*   |
+ * | Agenda / Mapa / Avisos   |          —             |          —           |   Sí    |
+ *
+ * (*) Comunidad sigue exigiendo sesión (no es 100% anónimo) — ver
+ * src/app/comunidad/page.tsx; Agenda/Mapa/Avisos sí son accesibles sin
+ * sesión, más permisivos que Comunidad.
  *
  * Admin siempre pasa (para poder revisar cualquier módulo).
  */

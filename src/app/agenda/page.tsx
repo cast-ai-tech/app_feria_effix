@@ -8,17 +8,15 @@ import AgendaClient, { type Talk } from "@/components/agenda/AgendaClient";
 export default async function AgendaPage() {
   const a = await getAccess();
 
-  // Acceso: requiere boleta vigente de la edición en curso (o admin).
+  // Abierta sin sesión (Fase 30): la programación es pública. Guardar
+  // charlas en Mi Agenda sí exige sesión (lo maneja AgendaClient).
   if (!a.configured)
     return (
       <LockedModule title="Programación" reason="ticket" configured={false} />
     );
-  if (!a.user) return <LockedModule title="Programación" reason="login" />;
-  if (!a.hasCurrentTicket && !a.isAdmin)
-    return <LockedModule title="Programación" reason="ticket" />;
 
   const supabase = await createClient();
-  const [{ data }, { data: saved }] = await Promise.all([
+  const [{ data }, savedResult, { data: reminderCfg }] = await Promise.all([
     supabase
       .from("talks")
       .select(
@@ -26,8 +24,17 @@ export default async function AgendaPage() {
       )
       .eq("edition", a.currentEdition)
       .order("starts_at", { ascending: true }),
-    supabase.from("saved_talks").select("talk_id").eq("user_id", a.user.id),
+    a.user
+      ? supabase.from("saved_talks").select("talk_id").eq("user_id", a.user.id)
+      : Promise.resolve({ data: null as { talk_id: string }[] | null }),
+    supabase
+      .from("app_config")
+      .select("value")
+      .eq("key", "reminder_lead_minutes")
+      .maybeSingle(),
   ]);
+  const saved = savedResult.data;
+  const reminderLeadMinutes = parseInt(reminderCfg?.value ?? "15", 10) || 15;
 
   return (
     <div className="flex flex-col">
@@ -46,6 +53,7 @@ export default async function AgendaPage() {
         talks={(data ?? []) as Talk[]}
         edition={a.edition}
         savedIds={(saved ?? []).map((s) => s.talk_id)}
+        reminderLeadMinutes={reminderLeadMinutes}
       />
     </div>
   );

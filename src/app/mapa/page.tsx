@@ -9,19 +9,13 @@ const SUBTITLE = "Plaza Mayor, Medellín · plano por zonas";
 
 /**
  * MAPA (Fase 5) — plano simplificado del recinto.
- * Acceso: requiere boleta vigente de la edición en curso (o admin).
+ * Abierto sin sesión (Fase 30) — solo depende del modo vitrina.
  */
 export default async function MapaPage() {
   const a = await getAccess();
 
   if (!a.configured) {
     return <LockedModule title={TITLE} reason="ticket" configured={false} />;
-  }
-  if (!a.user) {
-    return <LockedModule title={TITLE} reason="login" />;
-  }
-  if (!a.hasCurrentTicket && !a.isAdmin) {
-    return <LockedModule title={TITLE} reason="ticket" />;
   }
 
   return (

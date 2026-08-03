@@ -2,7 +2,8 @@
 
 import { Ban, CalendarDays, Clock, Star } from "lucide-react";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Badge from "@/components/Badge";
 import EmptyState from "@/components/EmptyState";
 import FilterChip from "@/components/FilterChip";
@@ -14,6 +15,10 @@ import { editionDays, type EditionInfo } from "@/lib/editions";
 import { createClient } from "@/lib/supabase/client";
 import { storage } from "@/lib/platform/storage";
 import { hapticTap } from "@/lib/platform/haptics";
+import {
+  scheduleTalkReminder,
+  cancelTalkReminder,
+} from "@/lib/platform/notifications";
 
 export type Talk = {
   id: string;
@@ -110,9 +115,15 @@ function TalkCard({
               cancelled ? (
                 <Ban className="h-[18px] w-[18px] text-red-300" aria-hidden />
               ) : live ? (
-                <span className="live-dot h-3 w-3 rounded-full bg-red-500" aria-hidden />
+                <span
+                  className="live-dot h-3 w-3 rounded-full bg-red-500"
+                  aria-hidden
+                />
               ) : (
-                <Clock className="h-[18px] w-[18px] text-brand-white" aria-hidden />
+                <Clock
+                  className="h-[18px] w-[18px] text-brand-white"
+                  aria-hidden
+                />
               )
             }
             title={
@@ -158,11 +169,14 @@ export default function AgendaClient({
   talks: serverTalks,
   edition,
   savedIds: initialSavedIds,
+  reminderLeadMinutes,
 }: {
   talks: Talk[];
   edition: EditionInfo;
   savedIds: string[];
+  reminderLeadMinutes: number;
 }) {
+  const router = useRouter();
   const DAYS = editionDays(edition);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [talks, setTalks] = useState<Talk[]>(serverTalks);
@@ -174,6 +188,44 @@ export default function AgendaClient({
   const [track, setTrack] = useState<string | null>(null);
   const [updatedBanner, setUpdatedBanner] = useState(false);
   const [justSavedFirst, setJustSavedFirst] = useState(false);
+
+  const savedIdsRef = useRef(savedIds);
+  useEffect(() => {
+    savedIdsRef.current = savedIds;
+  }, [savedIds]);
+
+  // Alarma local (no-op en web): solo tiene sentido si la charla sigue
+  // activa y con hora de inicio.
+  const syncReminder = useCallback(
+    (talk: Talk) => {
+      if (talk.status === "cancelled" || !talk.starts_at) {
+        void cancelTalkReminder(talk.id);
+        return;
+      }
+      void scheduleTalkReminder(
+        {
+          id: talk.id,
+          title: talk.title,
+          startsAt: talk.starts_at,
+          auditorium: talk.auditorium,
+        },
+        reminderLeadMinutes,
+      );
+    },
+    [reminderLeadMinutes],
+  );
+
+  // Al montar: re-programa la alarma de cada charla ya guardada (cubre
+  // reinstalación de la app o un segundo dispositivo) — idempotente por el
+  // ID determinista de talkReminderId.
+  useEffect(() => {
+    const savedSet = new Set(initialSavedIds);
+    for (const talk of serverTalks) {
+      if (savedSet.has(talk.id)) syncReminder(talk);
+    }
+    // Solo al montar: initialSavedIds/serverTalks son los props del server.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reloj del badge "Ahora".
   useEffect(() => {
@@ -212,18 +264,28 @@ export default function AgendaClient({
         "postgres_changes",
         { event: "*", schema: "public", table: "talks" },
         (payload) => {
-          setTalks((current) => {
-            if (payload.eventType === "DELETE") {
-              const old = payload.old as { id?: string };
-              return current.filter((t) => t.id !== old.id);
+          if (payload.eventType === "DELETE") {
+            const old = payload.old as { id?: string };
+            if (old.id && savedIdsRef.current.has(old.id)) {
+              void cancelTalkReminder(old.id);
             }
-            const row = payload.new as Talk;
+            setTalks((current) => current.filter((t) => t.id !== old.id));
+            setUpdatedBanner(true);
+            setTimeout(() => setUpdatedBanner(false), 4000);
+            return;
+          }
+          const row = payload.new as Talk;
+          setTalks((current) => {
             const idx = current.findIndex((t) => t.id === row.id);
             if (idx === -1) return [...current, row];
             const next = [...current];
             next[idx] = { ...next[idx], ...row };
             return next;
           });
+          // Cambió hora/sala/estado de una charla guardada: re-programa su
+          // alarma local (mismo criterio que notifica el push remoto en
+          // admin/agenda/actions.ts para quienes la guardaron).
+          if (savedIdsRef.current.has(row.id)) syncReminder(row);
           setUpdatedBanner(true);
           setTimeout(() => setUpdatedBanner(false), 4000);
         },
@@ -232,6 +294,7 @@ export default function AgendaClient({
     return () => {
       void supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleSave = useCallback(
@@ -241,7 +304,10 @@ export default function AgendaClient({
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        router.push("/ingresar?next=/agenda");
+        return;
+      }
 
       const isSaved = savedIds.has(talk.id);
       setSavedIds((s) => {
@@ -257,15 +323,19 @@ export default function AgendaClient({
           .delete()
           .eq("user_id", user.id)
           .eq("talk_id", talk.id);
+        void cancelTalkReminder(talk.id);
       } else {
         if (savedIds.size === 0) setJustSavedFirst(true);
-        await supabase.from("saved_talks").upsert(
-          { user_id: user.id, talk_id: talk.id },
-          { onConflict: "user_id,talk_id", ignoreDuplicates: true },
-        );
+        await supabase
+          .from("saved_talks")
+          .upsert(
+            { user_id: user.id, talk_id: talk.id },
+            { onConflict: "user_id,talk_id", ignoreDuplicates: true },
+          );
+        syncReminder(talk);
       }
     },
-    [savedIds],
+    [savedIds, router, syncReminder],
   );
 
   // Día seleccionado.
@@ -278,7 +348,9 @@ export default function AgendaClient({
     }
     return map;
   }, [talks]);
-  const todayStr = new Date(nowMs).toLocaleDateString("en-CA", { timeZone: TZ });
+  const todayStr = new Date(nowMs).toLocaleDateString("en-CA", {
+    timeZone: TZ,
+  });
   const todayDay = DAYS.find((d) => dayDates.get(d) === todayStr) ?? null;
   const firstWithTalks = DAYS.find((d) => talks.some((t) => t.day === d)) ?? 1;
   const [day, setDay] = useState<number>(() => todayDay ?? firstWithTalks);
@@ -385,7 +457,9 @@ export default function AgendaClient({
               )
             }
             title={
-              tab === "mia" ? "Tu agenda está vacía" : "Sin charlas para este día"
+              tab === "mia"
+                ? "Tu agenda está vacía"
+                : "Sin charlas para este día"
             }
             subtitle={
               tab === "mia"

@@ -5,6 +5,7 @@ import AppBackground from "@/components/AppBackground";
 import AppHeader from "@/components/AppHeader";
 import BottomNav from "@/components/BottomNav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import NativePushBootstrap from "@/components/NativePushBootstrap";
 import SplashSponsor from "@/components/SplashSponsor";
 import AppOpenIntro from "@/components/AppOpenIntro";
 import InstallAppBanner from "@/components/InstallAppBanner";
@@ -47,6 +48,7 @@ export default function RootLayout({
           ATRIBUTOS en este nodo — no oculta errores reales. */}
       <body className="min-h-full antialiased" suppressHydrationWarning>
         <ServiceWorkerRegister />
+        <NativePushBootstrap />
         <AppBackground />
         <AppOpenIntro />
         <SplashSponsor />

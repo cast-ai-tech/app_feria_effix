@@ -55,6 +55,15 @@ const ASSETS = [
   "brand/logo-convertmate.webp",
   "brand/logo-tu-imperio-youtube.webp",
   "brand/logo-grupo-effi.webp",
+  // Variantes "-black" (Fase 30): tarjeta ya compuesta sobre fondo negro,
+  // pensadas para el footer_strip "Patrocinadores Black".
+  "brand/logo-prendas-control-black.webp",
+  "brand/logo-unmerco-black.webp",
+  "brand/logo-vitalcom-black.webp",
+  "brand/logo-pancake-black.webp",
+  "brand/logo-convertmate-black.webp",
+  "brand/logo-tu-imperio-youtube-black.webp",
+  "brand/logo-grupo-effi-black.webp",
 ];
 
 const url = (path) => `${BASE}/storage/v1/object/public/banners/${path}`;

@@ -7,6 +7,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { notifications } from "@/lib/platform/notifications";
+import { nativePlatform } from "@/lib/platform/native";
 
 export async function enablePush(): Promise<
   "enabled" | "denied" | "unsupported" | "error"
@@ -28,8 +29,10 @@ export async function enablePush(): Promise<
     {
       user_id: user.id,
       endpoint: sub.endpoint,
-      p256dh: sub.keys.p256dh,
-      auth: sub.keys.auth,
+      platform: nativePlatform(),
+      // Solo Web Push trae claves VAPID; los tokens FCM nativos no las usan.
+      p256dh: sub.keys?.p256dh ?? null,
+      auth: sub.keys?.auth ?? null,
     },
     { onConflict: "endpoint" },
   );

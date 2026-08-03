@@ -20,8 +20,15 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
+  const { data: cfg } = await admin
+    .from("app_config")
+    .select("value")
+    .eq("key", "reminder_lead_minutes")
+    .maybeSingle();
+  const leadMinutes = parseInt(cfg?.value ?? "15", 10) || 15;
+
   const now = new Date();
-  const windowEnd = new Date(now.getTime() + 15 * 60 * 1000);
+  const windowEnd = new Date(now.getTime() + leadMinutes * 60 * 1000);
 
   // Charlas activas que empiezan en los próximos 15 minutos.
   const { data: talks } = await admin

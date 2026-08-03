@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, House, IdCard, Map, User } from "lucide-react";
+import { CalendarDays, GraduationCap, House, IdCard, Map } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
  * Barra de navegación inferior — la navegación de la APP en TODOS los
- * tamaños (esto no es un sitio web: nada de sidebars). Fase 24.
- * 5 accesos: Inicio, Agenda, CREDENCIAL (central destacado), Mapa, Perfil.
+ * tamaños (esto no es un sitio web: nada de sidebars). Fase 30.
+ * 5 accesos: Inicio, Credencial, AGENDA (central destacado, el más
+ * importante), Mapa, Academia. Perfil se movió al header (junto al logo).
  */
 const NAV_ITEMS = [
   { href: "/", label: "Inicio", icon: House, center: false },
-  { href: "/agenda", label: "Agenda", icon: CalendarDays, center: false },
-  { href: "/credencial", label: "Credencial", icon: IdCard, center: true },
+  { href: "/credencial", label: "Credencial", icon: IdCard, center: false },
+  { href: "/agenda", label: "Agenda", icon: CalendarDays, center: true },
   { href: "/mapa", label: "Mapa", icon: Map, center: false },
-  { href: "/perfil", label: "Perfil", icon: User, center: false },
+  { href: "/academia", label: "Academia", icon: GraduationCap, center: false },
 ] as const;
 
 export default function BottomNav() {
@@ -28,9 +29,7 @@ export default function BottomNav() {
     >
       {NAV_ITEMS.map((item) => {
         const active =
-          item.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(item.href);
+          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
         if (item.center) {
           return (

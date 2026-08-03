@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { Check, Crown, MessageCircle } from "lucide-react";
 import GlassCard from "@/components/GlassCard";
 import PageHeader from "@/components/PageHeader";
@@ -41,6 +42,12 @@ const TIER_STYLES: Record<
     dark: true,
     label: "Black",
   },
+};
+
+/** Insignia 3D por tier (Fase 30) — solo VIP y Black tienen pieza propia. */
+const TIER_BADGE_IMAGE: Partial<Record<TicketTier, string>> = {
+  vip: "/brand/badge-vip.png",
+  black: "/brand/badge-black.png",
 };
 
 /** corporativa/diaria no tienen lista propia: heredan la de general. */
@@ -115,6 +122,18 @@ export default async function BeneficiosPage() {
         </GlassCard>
       ) : (
         <>
+          {TIER_BADGE_IMAGE[a.ticketTier] && (
+            <div className="relative mx-auto mb-3 h-[132px] w-[132px]">
+              <Image
+                src={TIER_BADGE_IMAGE[a.ticketTier]!}
+                alt=""
+                fill
+                sizes="132px"
+                className="object-contain"
+                priority
+              />
+            </div>
+          )}
           <GlassCard className={`flex flex-col gap-1 p-5 ${style.card}`}>
             <span
               className={`flex items-center gap-2 text-[13px] font-black uppercase tracking-wide ${

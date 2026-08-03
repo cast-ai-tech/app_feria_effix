@@ -54,6 +54,15 @@ const ASSETS = [
   "brand/logo-convertmate.webp",
   "brand/logo-tu-imperio-youtube.webp",
   "brand/logo-grupo-effi.webp",
+  // Variantes "-black" (Fase 30): tarjeta ya compuesta sobre fondo negro,
+  // pensadas para el footer_strip "Patrocinadores Black".
+  "brand/logo-prendas-control-black.webp",
+  "brand/logo-unmerco-black.webp",
+  "brand/logo-vitalcom-black.webp",
+  "brand/logo-pancake-black.webp",
+  "brand/logo-convertmate-black.webp",
+  "brand/logo-tu-imperio-youtube-black.webp",
+  "brand/logo-grupo-effi-black.webp",
 ];
 
 const url = (path) => `${BASE}/storage/v1/object/public/banners/${path}`;
@@ -70,13 +79,16 @@ const BANNERS = [
   // ── module_top (agenda) ──
   { placement: "module_top", module_key: "agenda", title: "Apertura Feria Effix 2024", image_url: url("demo/apertura-2024.mp4"), link_url: null, sort_order: 5, active: true },
   { placement: "module_top", module_key: "agenda", title: "Patrocinador demo agenda", image_url: url("demo/hero1.png"), link_url: null, sort_order: 10, active: true },
-  // ── footer_strip: sponsors REALES del sitio; demos quedan apagados ──
-  { placement: "footer_strip", title: "Prendas Control", image_url: url("brand/logo-prendas-control.webp"), link_url: null, sort_order: 10, active: true },
-  { placement: "footer_strip", title: "Unmerco", image_url: url("brand/logo-unmerco.webp"), link_url: null, sort_order: 20, active: true },
-  { placement: "footer_strip", title: "Vitalcom", image_url: url("brand/logo-vitalcom.webp"), link_url: null, sort_order: 30, active: true },
-  { placement: "footer_strip", title: "Pancake", image_url: url("brand/logo-pancake.webp"), link_url: null, sort_order: 40, active: true },
-  { placement: "footer_strip", title: "Convertmate", image_url: url("brand/logo-convertmate.webp"), link_url: null, sort_order: 50, active: true },
-  { placement: "footer_strip", title: "Tu Imperio YouTube", image_url: url("brand/logo-tu-imperio-youtube.webp"), link_url: null, sort_order: 60, active: true },
+  // ── footer_strip: sponsors REALES del sitio; demos quedan apagados.
+  //    Tarjetas "-black" (Fase 30): título del slot cambió a
+  //    "Patrocinadores Black" en BannerSlot.tsx. ──
+  { placement: "footer_strip", title: "Prendas Control", image_url: url("brand/logo-prendas-control-black.webp"), link_url: null, sort_order: 10, active: true },
+  { placement: "footer_strip", title: "Unmerco", image_url: url("brand/logo-unmerco-black.webp"), link_url: null, sort_order: 20, active: true },
+  { placement: "footer_strip", title: "Vitalcom", image_url: url("brand/logo-vitalcom-black.webp"), link_url: null, sort_order: 30, active: true },
+  { placement: "footer_strip", title: "Pancake", image_url: url("brand/logo-pancake-black.webp"), link_url: null, sort_order: 40, active: true },
+  { placement: "footer_strip", title: "Convertmate", image_url: url("brand/logo-convertmate-black.webp"), link_url: null, sort_order: 50, active: true },
+  { placement: "footer_strip", title: "Tu Imperio YouTube", image_url: url("brand/logo-tu-imperio-youtube-black.webp"), link_url: null, sort_order: 60, active: true },
+  { placement: "footer_strip", title: "Grupo Effi", image_url: url("brand/logo-grupo-effi-black.webp"), link_url: "https://grupoeffi.com", sort_order: 70, active: true },
   { placement: "footer_strip", title: "Aliado demo A", image_url: url("demo/logo1.jpg"), link_url: null, sort_order: 10, active: false },
   { placement: "footer_strip", title: "Aliado demo B", image_url: url("demo/logo2.jpg"), link_url: null, sort_order: 20, active: false },
   // ── splash_sponsor: Grupo Effi (organizador) ──

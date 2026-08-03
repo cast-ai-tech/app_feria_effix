@@ -237,20 +237,29 @@ export default function BannerSlot({
   if (placement === "footer_strip") {
     return (
       <div className={cn("flex flex-col gap-2", className)}>
-        <p className="text-caption text-center text-brand-dim">Patrocinan</p>
-        <div className="grid grid-cols-3 items-center gap-3 md:grid-cols-4">
+        <p className="text-caption text-center text-brand-dim">
+          Patrocinadores Black
+        </p>
+        {/* flex-wrap + justify-center (no grid): con un número de logos que
+            no llena filas exactas, la última fila queda centrada en vez de
+            pegada a la izquierda — se ve simétrico sin importar cuántos
+            sponsors haya. Tarjetas "-black" (Fase 30) ya vienen compuestas
+            sobre fondo negro en 768×400 — el tile respeta esa proporción
+            exacta y las cubre completas (object-cover), sin padding extra
+            que las encoja ni las corte. */}
+        <div className="flex flex-wrap justify-center gap-3">
           {banners.map((b) => (
             <BannerLink
               key={b.id}
               banner={b}
-              linkClass="relative flex h-14 items-center justify-center overflow-hidden rounded-[12px] border border-white/10 bg-white/[0.04] p-2 transition-colors duration-150 hover:border-white/25 active:scale-[0.97]"
+              linkClass="relative aspect-[768/400] w-[30%] min-w-[104px] overflow-hidden rounded-[12px] border border-white/10 transition-colors duration-150 hover:border-white/25 active:scale-[0.97] md:w-[18%]"
             >
               <Image
                 src={b.image_url}
                 alt={b.title}
                 fill
-                sizes="(max-width: 768px) 33vw, 200px"
-                className="object-contain p-2"
+                sizes="(max-width: 768px) 30vw, 180px"
+                className="object-cover"
               />
             </BannerLink>
           ))}

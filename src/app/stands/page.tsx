@@ -1,3 +1,4 @@
+import Image from "next/image";
 import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import LockedModule from "@/components/LockedModule";
@@ -50,6 +51,18 @@ export default async function StandsPage() {
 
   return (
     <div className="flex flex-col">
+      {/* Hero cromado (Fase 30): mismo personaje del intro, lente
+          reflejando la zona de stands real del recinto. */}
+      <div className="relative mx-auto -mt-2 mb-2 h-[140px] w-[140px]">
+        <Image
+          src="/brand/stands-hero.png"
+          alt=""
+          fill
+          sizes="140px"
+          className="object-contain drop-shadow-[0_0_20px_rgba(36,138,204,0.3)]"
+          priority
+        />
+      </div>
       <PageHeader
         title="Stands"
         subtitle={`Expositores · Feria Effix ${a.currentEdition}`}

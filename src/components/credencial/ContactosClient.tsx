@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, Briefcase, Download, MessageCircle, Users } from "lucide-react";
+import { AtSign, Briefcase, Download, MessageCircle } from "lucide-react";
 
 import { useMemo, useState } from "react";
 import EmptyState from "@/components/EmptyState";
@@ -32,7 +32,8 @@ function csvEscape(v: string | null): string {
 
 /** Arma el CSV de contactos (separador coma, UTF-8 con BOM para Excel). */
 export function buildContactsCsv(rows: ContactRow[]): string {
-  const header = "nombre,rol,pais,whatsapp,instagram,linkedin,nota,conectado_el";
+  const header =
+    "nombre,rol,pais,whatsapp,instagram,linkedin,nota,conectado_el";
   const lines = rows.map((r) =>
     [
       csvEscape(r.fullName),
@@ -103,7 +104,8 @@ function ContactCard({ contact }: { contact: ContactRow }) {
             rel="noopener noreferrer"
             className="rounded-full border border-white/30 px-3 py-1 text-[9.5px] font-bold text-brand-white"
           >
-            <MessageCircle className="mr-1 inline h-3 w-3" aria-hidden />WhatsApp
+            <MessageCircle className="mr-1 inline h-3 w-3" aria-hidden />
+            WhatsApp
           </a>
         )}
         {contact.instagram && (
@@ -113,7 +115,8 @@ function ContactCard({ contact }: { contact: ContactRow }) {
             rel="noopener noreferrer"
             className="rounded-full border border-white/30 px-3 py-1 text-[9.5px] font-bold text-brand-white"
           >
-            <AtSign className="mr-1 inline h-3 w-3" aria-hidden />Instagram
+            <AtSign className="mr-1 inline h-3 w-3" aria-hidden />
+            Instagram
           </a>
         )}
         {contact.linkedin && (
@@ -123,7 +126,8 @@ function ContactCard({ contact }: { contact: ContactRow }) {
             rel="noopener noreferrer"
             className="rounded-full border border-white/30 px-3 py-1 text-[9.5px] font-bold text-brand-white"
           >
-            <Briefcase className="mr-1 inline h-3 w-3" aria-hidden />LinkedIn
+            <Briefcase className="mr-1 inline h-3 w-3" aria-hidden />
+            LinkedIn
           </a>
         )}
       </div>
@@ -165,7 +169,11 @@ function ContactCard({ contact }: { contact: ContactRow }) {
   );
 }
 
-export default function ContactosClient({ contacts }: { contacts: ContactRow[] }) {
+export default function ContactosClient({
+  contacts,
+}: {
+  contacts: ContactRow[];
+}) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [countryFilter, setCountryFilter] = useState<string | null>(null);
@@ -207,7 +215,7 @@ export default function ContactosClient({ contacts }: { contacts: ContactRow[] }
   if (contacts.length === 0) {
     return (
       <EmptyState
-        icon={<Users className="h-6 w-6" aria-hidden />}
+        image="/brand/hand-loading.png"
         title="Aún no tienes contactos"
         subtitle="Escanea la Credencial Effix de otra persona en la feria y quedará guardada aquí, con sus redes y tu nota."
       />
@@ -254,7 +262,8 @@ export default function ContactosClient({ contacts }: { contacts: ContactRow[] }
           onClick={exportCsv}
           className="rounded-full border border-white/35 px-3 py-1.5 text-[10px] font-extrabold text-brand-white"
         >
-          <Download className="mr-1 inline h-3 w-3" aria-hidden />Exportar CSV
+          <Download className="mr-1 inline h-3 w-3" aria-hidden />
+          Exportar CSV
         </button>
       </div>
 

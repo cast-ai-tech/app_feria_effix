@@ -5,6 +5,7 @@ import {
   Handshake,
   IdCard,
   MapPin,
+  Megaphone,
   Mic,
   Stamp,
   Store,
@@ -57,6 +58,12 @@ const MODULES: Array<{
     sub: "En tiempo real",
   },
   { href: "/mapa", icon: MapPin, label: "Mapa", sub: "Plano del recinto" },
+  {
+    href: "/notificaciones",
+    icon: Megaphone,
+    label: "Avisos",
+    sub: "Novedades del evento",
+  },
   { href: "/stands", icon: Store, label: "Stands", sub: "Agenda tu visita" },
   {
     href: "/ponentes",
