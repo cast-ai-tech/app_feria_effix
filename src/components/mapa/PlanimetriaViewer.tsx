@@ -347,6 +347,16 @@ export default function PlanimetriaViewer() {
                   position: "absolute",
                   width: imgW,
                   height: imgH,
+                  // El preflight de Tailwind pone `max-width:100%;
+                  // height:auto` a TODAS las <img> por defecto — eso le
+                  // gana al width/height explícitos de acá abajo (max-width
+                  // siempre gana, sin importar especificidad), y topaba la
+                  // imagen al ancho del contenedor pasara lo que pasara con
+                  // el zoom (el pan sí se sentía porque el translate movía
+                  // esa caja topada; el zoom no tenía ningún efecto visible
+                  // porque la caja nunca crecía). Hay que anularlo acá.
+                  maxWidth: "none",
+                  maxHeight: "none",
                   // Salvaguarda: si por lo que sea width/height no calzan
                   // exacto con la proporción real de la imagen (caché
                   // vieja, redondeo), "contain" nunca la estira — como
