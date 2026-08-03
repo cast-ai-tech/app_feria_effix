@@ -6,11 +6,12 @@ import { Expand, Minus, Plus, X } from "lucide-react";
 /**
  * Planimetría oficial 2026 (asset real de feriaeffix.com).
  * - Tarjeta: vista completa del plano, tap para ampliar.
- * - Ampliado: overlay full-device con zoom (botones, pellizco con dos dedos
- *   o rueda del mouse) y paneo LIBRE en X/Y arrastrando con el dedo o el
- *   mouse (Pointer Events — un solo código para touch/mouse/pen). El pinch
- *   nativo del navegador está bloqueado por maximumScale=1, así que este es
- *   el único zoom disponible dentro del visor.
+ * - Ampliado: overlay full-device con zoom (botones, pellizco con dos
+ *   dedos, o rueda del mouse) y paneo libre en X/Y. Touch (arrastre y
+ *   pellizco) va por Touch Events nativos; mouse va por Pointer Events —
+ *   están separados a propósito, ver el comentario en handlePointerDown.
+ *   El pinch nativo del navegador (zoom de la página) está bloqueado por
+ *   maximumScale=1 en el viewport global.
  */
 
 // ?v= (Fase 30): el archivo se reemplazó en la misma ruta — sin esto el
@@ -82,21 +83,44 @@ export default function PlanimetriaViewer() {
     if (!el) return;
     // Además de medir, centra el pan inicial con las medidas reales (si se
     // dejara en {0,0} a secas, la imagen nacería pegada arriba-izquierda
-    // hasta el primer gesto del usuario).
+    // hasta el primer gesto del usuario). Si el elemento aún no tiene
+    // layout (0×0) en el primer intento, reintenta un par de frames — en
+    // algunos navegadores móviles el overlay `fixed` tarda un frame extra
+    // en asentarse. Sin esto la imagen podía quedarse con viewport.w=0
+    // para siempre y no renderizarse nunca (parecía que "nada reaccionaba").
+    let attempts = 0;
+    let raf = 0;
     const measure = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
+      if (w === 0 && h === 0 && attempts < 10) {
+        attempts++;
+        raf = requestAnimationFrame(measure);
+        return;
+      }
       setViewport({ w, h });
       const imgW = w * DEFAULT_ZOOM;
       const imgH = imgW / NATURAL_ASPECT;
       setPan({ x: clampAxis(0, w, imgW), y: clampAxis(0, h, imgH) });
     };
     measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
+
+    // ResizeObserver es un nice-to-have (recalcula si rotas el teléfono);
+    // el resize de window es el respaldo universal si no está disponible.
+    let ro: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(measure);
+      ro.observe(el);
+    }
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+
     return () => {
       document.body.style.overflow = prevOverflow;
-      ro.disconnect();
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
     };
   }, [open]);
 
