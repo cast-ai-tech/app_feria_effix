@@ -45,10 +45,17 @@ export default function PlanimetriaViewer() {
   const [isDragging, setIsDragging] = useState(false);
 
   const viewportRef = useRef<HTMLDivElement>(null);
-  const pointers = useRef<Map<number, Point>>(new Map());
   const dragStart = useRef<Point | null>(null);
   const panStart = useRef<Point>({ x: 0, y: 0 });
   const pinchStart = useRef<{ dist: number; zoom: number } | null>(null);
+  const zoomRef = useRef(zoom);
+  const panRef = useRef(pan);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  useEffect(() => {
+    panRef.current = pan;
+  }, [pan]);
 
   const clampPan = useCallback(
     (p: Point, z: number): Point => {
@@ -99,85 +106,124 @@ export default function PlanimetriaViewer() {
     setPan((p) => clampPan(p, nz));
   }
 
+  // Arrastre con MOUSE (Pointer Events — el mouse solo tiene un puntero,
+  // sin ambigüedad multi-touch). El touch se maneja aparte, con Touch
+  // Events nativos (ver más abajo) — Pointer Events tiene soporte
+  // multi-touch inconsistente entre navegadores móviles (Safari iOS en
+  // particular), así que para el pinch usamos la API original y más
+  // confiable en vez de confiar en pointerdown/pointermove por dedo.
   function handlePointerDown(e: React.PointerEvent) {
-    // Refuerzo directo además de touch-action:none — algunos WebViews
-    // móviles no lo respetan al 100% en gestos de dos dedos y dejan que el
-    // sistema intente su propio pinch/zoom de página en vez de mandarnos
-    // los pointer events limpios.
-    e.preventDefault();
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* algunos navegadores rechazan capturar un pointer ya inactivo */
-    }
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (pointers.current.size === 1) {
-      dragStart.current = { x: e.clientX, y: e.clientY };
-      panStart.current = pan;
-      setIsDragging(true);
-    } else if (pointers.current.size === 2) {
-      const [a, b] = Array.from(pointers.current.values());
-      pinchStart.current = { dist: distance(a, b), zoom };
-      dragStart.current = null;
-      setIsDragging(false);
-    }
+    if (e.pointerType !== "mouse") return;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    panStart.current = pan;
+    setIsDragging(true);
   }
 
   function handlePointerMove(e: React.PointerEvent) {
-    if (!pointers.current.has(e.pointerId)) return;
-    e.preventDefault();
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (pointers.current.size === 2 && pinchStart.current) {
-      const [a, b] = Array.from(pointers.current.values());
-      const ratio = distance(a, b) / pinchStart.current.dist;
-      const nz = Math.min(
-        ZOOM_MAX,
-        Math.max(ZOOM_MIN, pinchStart.current.zoom * ratio),
-      );
-      setZoom(nz);
-      setPan((p) => clampPan(p, nz));
-      return;
-    }
-
-    if (pointers.current.size === 1 && dragStart.current) {
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      setPan(
-        clampPan(
-          { x: panStart.current.x + dx, y: panStart.current.y + dy },
-          zoom,
-        ),
-      );
-    }
+    if (e.pointerType !== "mouse" || !dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setPan(
+      clampPan(
+        { x: panStart.current.x + dx, y: panStart.current.y + dy },
+        zoom,
+      ),
+    );
   }
 
   function handlePointerUp(e: React.PointerEvent) {
-    pointers.current.delete(e.pointerId);
-    pinchStart.current = null;
-    if (pointers.current.size === 1) {
-      // Sigue arrastrando con el dedo que queda, sin salto brusco.
-      const [remaining] = Array.from(pointers.current.values());
-      dragStart.current = remaining;
-      panStart.current = pan;
-      setIsDragging(true);
-    } else {
-      dragStart.current = null;
-      setIsDragging(false);
-    }
+    if (e.pointerType !== "mouse") return;
+    dragStart.current = null;
+    setIsDragging(false);
   }
+
+  // Arrastre y pellizco con DEDOS — Touch Events nativos enganchados a
+  // mano (mismo motivo que el wheel: necesitan { passive: false } para
+  // poder frenar el scroll/zoom nativo de la página, y React nunca
+  // registra estos listeners como no-pasivos).
+  useEffect(() => {
+    if (!open) return;
+    const el = viewportRef.current;
+    if (!el) return;
+
+    function point(t: Touch): Point {
+      return { x: t.clientX, y: t.clientY };
+    }
+
+    function onTouchStart(e: TouchEvent) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        dragStart.current = point(e.touches[0]);
+        panStart.current = panRef.current;
+        pinchStart.current = null;
+        setIsDragging(true);
+      } else if (e.touches.length === 2) {
+        pinchStart.current = {
+          dist: distance(point(e.touches[0]), point(e.touches[1])),
+          zoom: zoomRef.current,
+        };
+        dragStart.current = null;
+        setIsDragging(false);
+      }
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      e.preventDefault();
+      if (e.touches.length === 2 && pinchStart.current) {
+        const ratio =
+          distance(point(e.touches[0]), point(e.touches[1])) /
+          pinchStart.current.dist;
+        const nz = Math.min(
+          ZOOM_MAX,
+          Math.max(ZOOM_MIN, pinchStart.current.zoom * ratio),
+        );
+        setZoom(nz);
+        setPan((p) => clampPan(p, nz));
+        return;
+      }
+      if (e.touches.length === 1 && dragStart.current) {
+        const t = point(e.touches[0]);
+        const dx = t.x - dragStart.current.x;
+        const dy = t.y - dragStart.current.y;
+        setPan(
+          clampPan(
+            { x: panStart.current.x + dx, y: panStart.current.y + dy },
+            zoomRef.current,
+          ),
+        );
+      }
+    }
+
+    // touchend/touchcancel: e.touches ya refleja los dedos que QUEDAN.
+    function onTouchEnd(e: TouchEvent) {
+      pinchStart.current = null;
+      if (e.touches.length === 1) {
+        dragStart.current = point(e.touches[0]);
+        panStart.current = panRef.current;
+        setIsDragging(true);
+      } else {
+        dragStart.current = null;
+        setIsDragging(false);
+      }
+    }
+
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: false });
+    el.addEventListener("touchcancel", onTouchEnd, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [open, clampPan]);
 
   // Zoom con la rueda del mouse — enganchado a mano con { passive: false }.
   // El onWheel de React SIEMPRE se registra como passive (limitación
   // conocida: no hay forma de pedirle a React que no lo sea), así que
   // e.preventDefault() ahí nunca funciona y el navegador scrollea la
   // página en vez de zoomear. Un listener nativo sí lo permite.
-  const zoomRef = useRef(zoom);
-  useEffect(() => {
-    zoomRef.current = zoom;
-  }, [zoom]);
-
   useEffect(() => {
     if (!open) return;
     const el = viewportRef.current;
