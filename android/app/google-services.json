@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "253292020486",
+    "project_id": "app-feria-effix",
+    "storage_bucket": "app-feria-effix.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:253292020486:android:df9b6467675c91468d1487",
+        "android_client_info": {
+          "package_name": "com.feriaeffix.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbQO6H1RG67eILG291xlXX2mOc7PcjEI0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
