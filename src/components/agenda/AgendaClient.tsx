@@ -15,6 +15,7 @@ import { editionDays, type EditionInfo } from "@/lib/editions";
 import { createClient } from "@/lib/supabase/client";
 import { storage } from "@/lib/platform/storage";
 import { hapticTap } from "@/lib/platform/haptics";
+import DayCalendar from "@/components/agenda/DayCalendar";
 import {
   scheduleTalkReminder,
   cancelTalkReminder,
@@ -187,6 +188,9 @@ export default function AgendaClient({
     () => new Set(initialSavedIds),
   );
   const [tab, setTab] = useState<"toda" | "mia">("toda");
+  // Vista de la agenda (Fase 30): lista clásica u horario visual (bloques
+  // por hora — el "calendario de la feria" dentro de la app).
+  const [view, setView] = useState<"lista" | "horario">("horario");
   const [auditorium, setAuditorium] = useState<string | null>(null);
   const [track, setTrack] = useState<string | null>(null);
   const [updatedBanner, setUpdatedBanner] = useState(false);
@@ -411,6 +415,19 @@ export default function AgendaClient({
                 {todayDay === d ? `Hoy · Día ${d}` : `Día ${d}`}
               </FilterChip>
             ))}
+            <span aria-hidden className="my-auto h-5 w-px bg-white/15" />
+            <FilterChip
+              active={view === "horario"}
+              onClick={() => setView("horario")}
+            >
+              Horario
+            </FilterChip>
+            <FilterChip
+              active={view === "lista"}
+              onClick={() => setView("lista")}
+            >
+              Lista
+            </FilterChip>
           </div>
           {(auditoriums.length > 1 || tracks.length > 0) && (
             <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-1">
@@ -515,6 +532,17 @@ export default function AgendaClient({
                 ? "Toca la estrella ☆ de cualquier charla para armar tu itinerario personal."
                 : "Aún no hay conferencias programadas en la agenda de este día. Vuelve pronto."
             }
+          />
+        </div>
+      ) : tab === "toda" &&
+        view === "horario" &&
+        shown.some((t) => !!t.starts_at) ? (
+        <div className="mt-2">
+          <DayCalendar
+            talks={shown}
+            nowMs={nowMs}
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
           />
         </div>
       ) : (
