@@ -15,10 +15,15 @@ import { buildCalendar, type IcsEvent } from "@/lib/ics";
  * Supabase). Solo expone las charlas guardadas del dueño del token.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
+  // ?download=1 → descarga como archivo: en Android la suscripción por URL
+  // no se puede completar desde la app de Google Calendar (limitación de
+  // Google, solo el sitio de escritorio la ofrece), así que la vía rápida
+  // en el teléfono es abrir el .ics descargado e importarlo.
+  const download = new URL(req.url).searchParams.get("download") === "1";
 
   // El token es un uuid — descarta basura antes de tocar la BD.
   const clean = token.replace(/\.ics$/i, "");
@@ -84,7 +89,7 @@ export async function GET(
   return new NextResponse(ics, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'inline; filename="feria-effix-agenda.ics"',
+      "Content-Disposition": `${download ? "attachment" : "inline"}; filename="feria-effix-agenda.ics"`,
       // Los clientes de calendario refrescan por su cuenta; 5 min de caché
       // evitan hammering sin que un cambio de agenda tarde en reflejarse
       // (con 1h, guardar una charla y refrescar el calendario mostraba la

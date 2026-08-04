@@ -450,16 +450,29 @@ export default function AgendaClient({
       )}
 
       {/* Sincronización con el calendario del celular (Fase 30): feed .ics
-          suscribible — el calendario lo refresca solo, sin permisos OAuth. */}
+          suscribible — el calendario lo refresca solo, sin permisos OAuth.
+          En Android la suscripción por URL solo se completa desde el sitio
+          de ESCRITORIO de Google Calendar (limitación de Google), por eso
+          la vía principal en el teléfono es "Agregar ahora" (importa el
+          .ics al instante) y la suscripción queda como opción pro. */}
       {tab === "mia" && calendarFeedUrl && savedIds.size > 0 && (
         <GlassCard className="mb-2 flex flex-col gap-3 p-4">
           <p className="flex items-center gap-1.5 text-[12px] font-extrabold text-brand-white">
             <CalendarPlus className="h-4 w-4" aria-hidden />
-            Sincroniza con el calendario de tu celular
+            Lleva tu agenda al calendario del celular
           </p>
-          <p className="text-[10.5px] leading-relaxed text-brand-muted">
-            Suscríbete una sola vez y tus charlas guardadas aparecen y se
-            actualizan solas en tu calendario (cambios de hora incluidos).
+          <a
+            href={`${calendarFeedUrl}?download=1`}
+            className="rounded-full bg-brand-white px-4 py-2.5 text-center text-[11px] font-extrabold text-black active:scale-95"
+          >
+            Agregar ahora a mi calendario
+          </a>
+          <p className="text-[10px] leading-relaxed text-brand-muted">
+            Descarga tus charlas y ábrelas con tu app de calendario. Si luego
+            guardas más charlas, vuelve a tocar el botón.
+          </p>
+          <p className="text-[10px] font-bold text-brand-dim">
+            ¿Prefieres que se actualice solo? Suscríbete una vez:
           </p>
           <div className="flex gap-2">
             <a
@@ -476,7 +489,7 @@ export default function AgendaClient({
               rel="noopener noreferrer"
               className="flex-1 rounded-full border border-white/25 px-4 py-2 text-center text-[10.5px] font-bold text-brand-white active:scale-95"
             >
-              Google Calendar
+              Google (en computador)
             </a>
           </div>
         </GlassCard>
