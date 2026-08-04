@@ -70,32 +70,32 @@ insert into public.talks (title, description, speaker_name, auditorium, day, sta
 select * from (values
   ('Growth con IA para e-commerce',
    'Cómo usar inteligencia artificial para escalar campañas y personalizar la experiencia de compra.',
-   'Camila Restrepo', 'Auditorio 2', 1,
+   'Camila Restrepo', 'Auditorio E-commerce', 1,
    timestamptz '2026-10-15 10:00:00-05', timestamptz '2026-10-15 11:00:00-05', 2026),
 
   ('Escalar con embajadores y afiliados',
    'Diseña un programa de embajadores que multiplique tus ventas sin inflar el CAC.',
-   'Andrés Gómez', 'Auditorio 1', 1,
+   'Andrés Gómez', 'Auditorio Effix', 1,
    timestamptz '2026-10-15 11:15:00-05', timestamptz '2026-10-15 12:00:00-05', 2026),
 
   ('Meta Ads: lo que cambió en 2026',
    'Las novedades de la plataforma publicitaria de Meta y cómo adaptar tu estrategia.',
-   'Laura Vélez', 'Auditorio 3', 2,
+   'Laura Vélez', 'Auditorio Marketing', 2,
    timestamptz '2026-10-16 12:15:00-05', timestamptz '2026-10-16 13:00:00-05', 2026),
 
   ('Cierre de ventas de alto ticket',
    'Metodología para cerrar productos y servicios premium en el mundo digital.',
-   'Sebastián Ríos', 'Auditorio 2', 2,
+   'Sebastián Ríos', 'Auditorio Prendas Control', 2,
    timestamptz '2026-10-16 14:00:00-05', timestamptz '2026-10-16 15:00:00-05', 2026),
 
   ('Logística que enamora al cliente',
    'Última milla, empaques y postventa como palanca de recompra.',
-   'Valentina Ortiz', 'Auditorio 1', 3,
+   'Valentina Ortiz', 'Auditorio Unmerco', 3,
    timestamptz '2026-10-17 09:30:00-05', timestamptz '2026-10-17 10:30:00-05', 2026),
 
   ('Marca personal para founders',
    'Construye autoridad y comunidad alrededor de tu marca desde el día uno.',
-   'Mateo Cardona', 'Auditorio 3', 3,
+   'Mateo Cardona', 'Auditorio Creadores', 3,
    timestamptz '2026-10-17 11:00:00-05', timestamptz '2026-10-17 12:00:00-05', 2026)
 ) as seed
 where not exists (select 1 from public.talks);

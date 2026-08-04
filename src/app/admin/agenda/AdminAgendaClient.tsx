@@ -100,7 +100,7 @@ function TalkForm({
         label="Auditorio"
         name="auditorium"
         defaultValue={initial?.auditorium ?? ""}
-        placeholder="Auditorio 1"
+        placeholder="Auditorio Effix"
       />
       <Field
         label="Track / tema"

@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/cn";
 import { layoutDay, timeBounds, type ScheduleItem } from "@/lib/scheduleLayout";
+import { auditoriumColor } from "@/lib/auditoriumColors";
 import type { Talk } from "@/components/agenda/AgendaClient";
 
 /**
@@ -19,15 +20,6 @@ const HOUR_MS = 3_600_000;
 /** Altura de una hora en px — define la escala vertical. */
 const HOUR_PX = 96;
 const GUTTER_PX = 48;
-
-/** Paleta por auditorio — derivados de la gama de marca (cromo/cian/lavanda/oro). */
-const AUDITORIUM_COLORS = [
-  "#248acc", // cian (glow oficial)
-  "#726e8d", // lavanda
-  "#f5d67b", // oro VIP
-  "#e8e8e8", // cromo
-  "#8a86ad", // lavanda clara
-];
 
 function fmtHour(ms: number): string {
   return new Date(ms).toLocaleTimeString("es-CO", {
@@ -79,13 +71,10 @@ export default function DayCalendar({
       [...new Set(timed.map((t) => t.auditorium).filter(Boolean))] as string[],
     [timed],
   );
-  const colorOf = (auditorium: string | null) => {
-    const idx = auditorium ? auditoriums.indexOf(auditorium) : -1;
-    return AUDITORIUM_COLORS[
-      ((idx % AUDITORIUM_COLORS.length) + AUDITORIUM_COLORS.length) %
-        AUDITORIUM_COLORS.length
-    ];
-  };
+  // Colores del PLANO del recinto (misma fuente que los filtros de
+  // Programación) — cada auditorio con la identidad de su pabellón.
+  const colorOf = (auditorium: string | null) =>
+    auditoriumColor(auditorium, auditoriums);
 
   if (timed.length === 0) return null;
 
@@ -97,6 +86,15 @@ export default function DayCalendar({
   }
   const yOf = (ms: number) => ((ms - bounds.startMs) / totalMs) * heightPx;
   const nowVisible = nowMs >= bounds.startMs && nowMs <= bounds.endMs;
+
+  // Escala real de la feria: ~13 auditorios en paralelo. Con más de 3
+  // charlas simultáneas los carriles no caben legibles en el ancho del
+  // teléfono → el lienzo crece (mínimo por carril) y se panea horizontal.
+  const maxLanes = Math.max(1, ...[...layout.values()].map((p) => p.laneCount));
+  const scrollable = maxLanes > 3;
+  const canvasWidth = scrollable
+    ? `${GUTTER_PX + maxLanes * 150}px`
+    : undefined;
 
   return (
     <div className="flex flex-col gap-2">
@@ -118,117 +116,128 @@ export default function DayCalendar({
         </div>
       )}
 
-      <div
-        className="relative"
-        style={{ height: heightPx + 16 }}
-        role="list"
-        aria-label="Horario del día"
-      >
-        {/* Marcas de hora */}
-        {hourMarks.map((ms) => (
+      {scrollable && (
+        <p className="text-[9.5px] font-semibold text-brand-muted">
+          Desliza a los lados para ver todas las charlas simultáneas →
+        </p>
+      )}
+
+      <div className={cn(scrollable && "no-scrollbar overflow-x-auto")}>
+        <div
+          className="relative"
+          style={{ height: heightPx + 16, minWidth: canvasWidth }}
+          role="list"
+          aria-label="Horario del día"
+        >
+          {/* Marcas de hora */}
+          {hourMarks.map((ms) => (
+            <div
+              key={ms}
+              aria-hidden
+              className="absolute left-0 right-0 flex items-center gap-2"
+              style={{ top: yOf(ms) }}
+            >
+              <span className="w-[40px] text-right text-[9px] font-bold tabular-nums text-brand-muted">
+                {fmtHour(ms)}
+              </span>
+              <span className="h-px flex-1 bg-white/[0.07]" />
+            </div>
+          ))}
+
+          {/* Línea de "ahora" (solo mientras transcurre el día del evento) */}
+          {nowVisible && (
+            <div
+              aria-hidden
+              className="absolute left-[40px] right-0 z-10 flex items-center"
+              style={{ top: yOf(nowMs) }}
+            >
+              <span className="h-2 w-2 -translate-x-1 rounded-full bg-glow-cian" />
+              <span className="h-[2px] flex-1 bg-glow-cian/80" />
+            </div>
+          )}
+
+          {/* Bloques de charlas (contenedor a la derecha del gutter de horas) */}
           <div
-            key={ms}
-            aria-hidden
-            className="absolute left-0 right-0 flex items-center gap-2"
-            style={{ top: yOf(ms) }}
+            className="absolute inset-y-0 right-0"
+            style={{ left: GUTTER_PX }}
           >
-            <span className="w-[40px] text-right text-[9px] font-bold tabular-nums text-brand-muted">
-              {fmtHour(ms)}
-            </span>
-            <span className="h-px flex-1 bg-white/[0.07]" />
-          </div>
-        ))}
+            {timed.map((t) => {
+              const it = byId.get(t.id)!;
+              const place = layout.get(t.id) ?? { lane: 0, laneCount: 1 };
+              const top = yOf(it.startMs);
+              const height = Math.max(yOf(it.endMs) - top, 34);
+              const laneW = 100 / place.laneCount;
+              const saved = savedIds.has(t.id);
+              const cancelled = t.status === "cancelled";
+              const color = colorOf(t.auditorium);
+              const compact = height < 56;
 
-        {/* Línea de "ahora" (solo mientras transcurre el día del evento) */}
-        {nowVisible && (
-          <div
-            aria-hidden
-            className="absolute left-[40px] right-0 z-10 flex items-center"
-            style={{ top: yOf(nowMs) }}
-          >
-            <span className="h-2 w-2 -translate-x-1 rounded-full bg-glow-cian" />
-            <span className="h-[2px] flex-1 bg-glow-cian/80" />
-          </div>
-        )}
-
-        {/* Bloques de charlas (contenedor a la derecha del gutter de horas) */}
-        <div className="absolute inset-y-0 right-0" style={{ left: GUTTER_PX }}>
-          {timed.map((t) => {
-            const it = byId.get(t.id)!;
-            const place = layout.get(t.id) ?? { lane: 0, laneCount: 1 };
-            const top = yOf(it.startMs);
-            const height = Math.max(yOf(it.endMs) - top, 34);
-            const laneW = 100 / place.laneCount;
-            const saved = savedIds.has(t.id);
-            const cancelled = t.status === "cancelled";
-            const color = colorOf(t.auditorium);
-            const compact = height < 56;
-
-            return (
-              <div
-                key={t.id}
-                role="listitem"
-                className={cn(
-                  "absolute overflow-hidden rounded-[10px] border bg-[rgba(20,20,26,0.92)] px-2 py-1.5",
-                  saved ? "border-white/60" : "border-white/[0.12]",
-                  cancelled && "opacity-45",
-                )}
-                style={{
-                  top,
-                  height,
-                  left: `${place.lane * laneW}%`,
-                  width: `calc(${laneW}% - 3px)`,
-                  borderLeftWidth: 3,
-                  borderLeftColor: color,
-                }}
-              >
-                <div className="flex items-start justify-between gap-1">
-                  <div className="min-w-0">
-                    <p
-                      className={cn(
-                        "truncate text-[10.5px] font-extrabold leading-tight text-brand-white",
-                        cancelled && "line-through",
-                      )}
-                    >
-                      {t.title}
-                    </p>
-                    <p className="truncate text-[9px] font-semibold tabular-nums text-brand-muted">
-                      {fmtHour(it.startMs)}–{fmtHour(it.endMs)}
-                      {!compact && t.auditorium ? ` · ${t.auditorium}` : ""}
-                      {cancelled ? " · Cancelada" : ""}
-                    </p>
-                    {!compact && t.speaker_name && (
-                      <p className="truncate text-[9px] text-brand-dim">
-                        {t.speaker_name}
+              return (
+                <div
+                  key={t.id}
+                  role="listitem"
+                  className={cn(
+                    "absolute overflow-hidden rounded-[10px] border bg-[rgba(20,20,26,0.92)] px-2 py-1.5",
+                    saved ? "border-white/60" : "border-white/[0.12]",
+                    cancelled && "opacity-45",
+                  )}
+                  style={{
+                    top,
+                    height,
+                    left: `${place.lane * laneW}%`,
+                    width: `calc(${laneW}% - 3px)`,
+                    borderLeftWidth: 3,
+                    borderLeftColor: color,
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-1">
+                    <div className="min-w-0">
+                      <p
+                        className={cn(
+                          "truncate text-[10.5px] font-extrabold leading-tight text-brand-white",
+                          cancelled && "line-through",
+                        )}
+                      >
+                        {t.title}
                       </p>
+                      <p className="truncate text-[9px] font-semibold tabular-nums text-brand-muted">
+                        {fmtHour(it.startMs)}–{fmtHour(it.endMs)}
+                        {!compact && t.auditorium ? ` · ${t.auditorium}` : ""}
+                        {cancelled ? " · Cancelada" : ""}
+                      </p>
+                      {!compact && t.speaker_name && (
+                        <p className="truncate text-[9px] text-brand-dim">
+                          {t.speaker_name}
+                        </p>
+                      )}
+                    </div>
+                    {canStar(t) && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleSave(t)}
+                        aria-label={
+                          saved
+                            ? `Quitar de Mi Agenda: ${t.title}`
+                            : `Guardar en Mi Agenda: ${t.title}`
+                        }
+                        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full active:scale-90"
+                      >
+                        <Star
+                          className={cn(
+                            "h-3.5 w-3.5",
+                            saved
+                              ? "fill-brand-white text-brand-white"
+                              : "text-brand-muted",
+                          )}
+                          aria-hidden
+                        />
+                      </button>
                     )}
                   </div>
-                  {canStar(t) && (
-                    <button
-                      type="button"
-                      onClick={() => onToggleSave(t)}
-                      aria-label={
-                        saved
-                          ? `Quitar de Mi Agenda: ${t.title}`
-                          : `Guardar en Mi Agenda: ${t.title}`
-                      }
-                      className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full active:scale-90"
-                    >
-                      <Star
-                        className={cn(
-                          "h-3.5 w-3.5",
-                          saved
-                            ? "fill-brand-white text-brand-white"
-                            : "text-brand-muted",
-                        )}
-                        aria-hidden
-                      />
-                    </button>
-                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

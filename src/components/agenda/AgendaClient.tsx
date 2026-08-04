@@ -26,6 +26,7 @@ import {
   dateChipLabel,
   defaultDateKey,
 } from "@/lib/agendaDates";
+import { auditoriumColor } from "@/lib/auditoriumColors";
 import { createClient } from "@/lib/supabase/client";
 import { storage } from "@/lib/platform/storage";
 import { hapticTap } from "@/lib/platform/haptics";
@@ -219,6 +220,9 @@ export default function AgendaClient({
   // por hora — el "calendario de la feria" dentro de la app).
   const [view, setView] = useState<"lista" | "horario">("horario");
   const [auditorium, setAuditorium] = useState<string | null>(null);
+  // Con ~13 auditorios la cuadrícula colapsa a los primeros y un "Ver
+  // todos" — el filtro seleccionado siempre queda visible.
+  const [showAllAuditoriums, setShowAllAuditoriums] = useState(false);
   const [track, setTrack] = useState<string | null>(null);
   const [updatedBanner, setUpdatedBanner] = useState(false);
   const [justSavedFirst, setJustSavedFirst] = useState(false);
@@ -547,17 +551,76 @@ export default function AgendaClient({
               Lista
             </FilterChip>
           </div>
-          {(auditoriums.length > 1 || tracks.length > 0) && (
-            <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-1">
-              {auditoriums.map((a) => (
-                <FilterChip
-                  key={`a-${a}`}
-                  active={auditorium === a}
-                  onClick={() => setAuditorium(auditorium === a ? null : a)}
+          {/* Filtro GRÁFICO por auditorio (Fase 30): cuadrícula fija (todos
+              visibles, sin scroll oculto), cada auditorio con el color de
+              su pabellón en el plano del recinto — el mismo color que pinta
+              sus bloques en la vista Horario. */}
+          {auditoriums.length > 1 && (
+            <div className="mb-2 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setAuditorium(null)}
+                className={cn(
+                  "col-span-2 rounded-[12px] border px-3 py-2.5 text-[11px] font-extrabold transition-colors duration-150 active:scale-[0.98]",
+                  !auditorium
+                    ? "border-white bg-brand-white text-black"
+                    : "border-white/20 text-brand-dim",
+                )}
+              >
+                Todos los auditorios
+              </button>
+              {(showAllAuditoriums || auditoriums.length <= 6
+                ? auditoriums
+                : [
+                    ...auditoriums.slice(0, 5),
+                    // El seleccionado nunca se esconde detrás del "Ver todos".
+                    ...(auditorium &&
+                    !auditoriums.slice(0, 5).includes(auditorium)
+                      ? [auditorium]
+                      : []),
+                  ]
+              ).map((a) => {
+                const c = auditoriumColor(a, auditoriums);
+                const active = auditorium === a;
+                return (
+                  <button
+                    key={`a-${a}`}
+                    type="button"
+                    onClick={() => setAuditorium(active ? null : a)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-[12px] border px-3 py-2.5 text-left text-[10.5px] font-bold leading-tight transition-colors duration-150 active:scale-[0.98]",
+                      active ? "text-brand-white" : "text-brand-dim",
+                    )}
+                    style={
+                      active
+                        ? { borderColor: c, backgroundColor: `${c}2e` }
+                        : { borderColor: `${c}55` }
+                    }
+                  >
+                    <span
+                      aria-hidden
+                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                      style={{ background: c }}
+                    />
+                    <span className="min-w-0 truncate">{a}</span>
+                  </button>
+                );
+              })}
+              {auditoriums.length > 6 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllAuditoriums((s) => !s)}
+                  className="col-span-2 rounded-[12px] border border-dashed border-white/25 px-3 py-2 text-[10.5px] font-bold text-brand-muted active:scale-[0.98]"
                 >
-                  {a}
-                </FilterChip>
-              ))}
+                  {showAllAuditoriums
+                    ? "Ver menos"
+                    : `Ver los ${auditoriums.length} auditorios`}
+                </button>
+              )}
+            </div>
+          )}
+          {tracks.length > 0 && (
+            <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-1">
               {tracks.map((tr) => (
                 <FilterChip
                   key={`t-${tr}`}
