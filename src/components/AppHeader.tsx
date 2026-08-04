@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import HeaderTierBadge from "@/components/HeaderTierBadge";
 import NotificationsBell from "@/components/NotificationsBell";
 
 /**
@@ -23,10 +24,15 @@ export default function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[0.07] bg-[rgba(5,5,7,0.88)] px-5 pb-2.5 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-md md:px-8 xl:px-12">
-      <Link href="/" aria-label="Inicio">
-        <BrandLogo />
-      </Link>
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <Link href="/" aria-label="Inicio" className="flex-shrink-0">
+          <BrandLogo />
+        </Link>
+        {/* Tier de la boleta (Fase 30) — al lado del logo, antes de la
+            campana; solo aparece con boleta vigente. */}
+        <HeaderTierBadge />
+      </div>
+      <div className="flex flex-shrink-0 items-center gap-2">
         <NotificationsBell variant="inline" />
         <Link
           href="/perfil"

@@ -61,13 +61,13 @@ export default async function NotificacionesPage() {
         subtitle="Avisos del evento y novedades"
         backHref="/"
       />
-      <NotificacionesClient items={items} />
       <BannerSlot
         placement="module_top"
         moduleKey="notificaciones"
         edition={a.currentEdition}
-        className="mt-6"
+        className="mb-4"
       />
+      <NotificacionesClient items={items} />
     </div>
   );
 }

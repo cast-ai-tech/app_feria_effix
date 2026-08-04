@@ -58,6 +58,12 @@ export default async function AgendaPage() {
         subtitle="Actualizada en tiempo real"
         backHref="/"
       />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="agenda"
+        edition={a.currentEdition}
+        className="mb-4"
+      />
       <AgendaClient
         talks={(data ?? []) as Talk[]}
         edition={a.edition}
@@ -65,15 +71,6 @@ export default async function AgendaPage() {
         reminderLeadMinutes={reminderLeadMinutes}
         userEvents={(eventsResult.data ?? []) as UserEvent[]}
         isLoggedIn={!!a.user}
-      />
-      {/* Patrocinio al FINAL (Fase 30): arriba empujaba la agenda fuera de
-          pantalla; abajo el inventario sigue visible sin robar el espacio
-          principal a los filtros por auditorio. */}
-      <BannerSlot
-        placement="module_top"
-        moduleKey="agenda"
-        edition={a.currentEdition}
-        className="mt-6"
       />
     </div>
   );

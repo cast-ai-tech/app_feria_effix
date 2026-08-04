@@ -32,13 +32,13 @@ export default async function ComunidadPage() {
         subtitle="Conecta con la comunidad Effix · abierto para todos"
         backHref="/"
       />
-      <ComunidadClient members={members} />
       <BannerSlot
         placement="module_top"
         moduleKey="comunidad"
         edition={a.currentEdition}
-        className="mt-6"
+        className="mb-4"
       />
+      <ComunidadClient members={members} />
     </div>
   );
 }

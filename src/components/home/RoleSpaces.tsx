@@ -1,5 +1,4 @@
 import {
-  Crown,
   Handshake,
   Mic,
   ShieldCheck,
@@ -7,12 +6,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import GlassCard from "@/components/GlassCard";
-import { cn } from "@/lib/cn";
-import type { TicketTier, UserRoles } from "@/lib/accessRules";
+import type { UserRoles } from "@/lib/accessRules";
 
 type RoleSpacesProps = {
   roles: UserRoles;
-  ticketTier: TicketTier | null;
 };
 
 type SpaceCard = {
@@ -20,23 +17,16 @@ type SpaceCard = {
   icon: LucideIcon;
   label: string;
   sub: string;
-  /** Acento visual del tier de boleta (VIP/Black); el resto usa el estilo neutro. */
-  tier?: "vip" | "black";
-};
-
-/** Clases del círculo de icono. Los tiers usan el degradado metálico oficial. */
-const ICON_STYLES: Record<"default" | "vip" | "black", string> = {
-  default: "border border-brand-lav/50 bg-brand-lav/30 text-brand-white",
-  vip: "tier-vip-bg border-transparent text-black",
-  black: "tier-black-bg border-transparent text-black",
 };
 
 /**
  * "Tus espacios" — accesos rápidos según el rol activo del usuario
- * (expositor, ponente, patrocinador, equipo Effix) y su tier de boleta
- * (beneficios VIP/Black). Fase 28. Si no aplica ningún rol, no renderiza nada.
+ * (expositor, ponente, patrocinador, equipo Effix). Fase 28; en Fase 30 la
+ * insignia del tier de boleta se movió al header (HeaderTierBadge) y los
+ * beneficios se abren desde el perfil, así que aquí solo quedan los roles.
+ * Si no aplica ningún rol, no renderiza nada.
  */
-export default function RoleSpaces({ roles, ticketTier }: RoleSpacesProps) {
+export default function RoleSpaces({ roles }: RoleSpacesProps) {
   const cards: SpaceCard[] = [];
 
   if (roles.isExhibitor) {
@@ -71,24 +61,6 @@ export default function RoleSpaces({ roles, ticketTier }: RoleSpacesProps) {
       sub: "Equipo interno",
     });
   }
-  if (ticketTier === "vip") {
-    cards.push({
-      href: "/beneficios",
-      icon: Crown,
-      label: "Beneficios VIP",
-      sub: "Tus ventajas de boleta",
-      tier: "vip",
-    });
-  }
-  if (ticketTier === "black") {
-    cards.push({
-      href: "/beneficios",
-      icon: Crown,
-      label: "Beneficios Black",
-      sub: "Tus ventajas de boleta",
-      tier: "black",
-    });
-  }
 
   if (cards.length === 0) return null;
 
@@ -102,12 +74,7 @@ export default function RoleSpaces({ roles, ticketTier }: RoleSpacesProps) {
             href={c.href}
             className="flex min-h-[104px] flex-col justify-between gap-2 px-4 py-4"
           >
-            <span
-              className={cn(
-                "flex h-11 w-11 items-center justify-center rounded-full",
-                ICON_STYLES[c.tier ?? "default"],
-              )}
-            >
+            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-lav/50 bg-brand-lav/30 text-brand-white">
               <c.icon className="h-5 w-5" aria-hidden />
             </span>
             <span>

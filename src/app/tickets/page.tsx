@@ -93,6 +93,12 @@ export default async function TicketsPage() {
         subtitle="QR de acceso · funciona sin conexión"
         backHref="/"
       />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="tickets"
+        edition={edition.year}
+        className="mb-4"
+      />
 
       {hasAny ? (
         <>
@@ -127,12 +133,6 @@ export default async function TicketsPage() {
       ) : (
         <NoTicket accountEmail={user.email ?? ""} blackWhatsappUrl={blackUrl} />
       )}
-      <BannerSlot
-        placement="module_top"
-        moduleKey="tickets"
-        edition={edition.year}
-        className="mt-6"
-      />
     </div>
   );
 }

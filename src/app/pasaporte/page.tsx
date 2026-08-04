@@ -98,13 +98,13 @@ export default async function PasaportePage() {
         subtitle="Colecciona sellos visitando stands · gana premios"
         backHref="/"
       />
-      <PasaporteClient data={data} />
       <BannerSlot
         placement="module_top"
         moduleKey="pasaporte"
         edition={a.currentEdition}
-        className="mt-6"
+        className="mb-4"
       />
+      <PasaporteClient data={data} />
     </div>
   );
 }

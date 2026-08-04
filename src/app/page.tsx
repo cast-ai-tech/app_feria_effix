@@ -1,11 +1,7 @@
 import Link from "next/link";
 import {
   CalendarClock,
-  GraduationCap,
   Handshake,
-  IdCard,
-  MapPin,
-  Megaphone,
   Mic,
   Stamp,
   Store,
@@ -27,18 +23,17 @@ import { getAccess } from "@/lib/access";
  * countdown → banner inline → tus espacios (Fase 28) → módulos →
  * próximas charlas → franja Patrocinan.
  */
+/**
+ * Grilla del Home (Fase 30): SOLO módulos sin acceso directo en la barra
+ * inferior ni el header — Credencial, Programación, Mapa y Academia viven
+ * en el BottomNav, y Avisos en la campanita del header.
+ */
 const MODULES: Array<{
   href: string;
   icon: LucideIcon;
   label: string;
   sub: string;
 }> = [
-  {
-    href: "/credencial",
-    icon: IdCard,
-    label: "Credencial",
-    sub: "Escanea y conecta",
-  },
   {
     href: "/pasaporte",
     icon: Stamp,
@@ -51,31 +46,12 @@ const MODULES: Array<{
     label: "Mi escarapela",
     sub: "QR y acceso",
   },
-  {
-    href: "/agenda",
-    icon: CalendarClock,
-    label: "Programación",
-    sub: "En tiempo real",
-  },
-  { href: "/mapa", icon: MapPin, label: "Mapa", sub: "Plano del recinto" },
-  {
-    href: "/notificaciones",
-    icon: Megaphone,
-    label: "Avisos",
-    sub: "Novedades del evento",
-  },
   { href: "/stands", icon: Store, label: "Stands", sub: "Agenda tu visita" },
   {
     href: "/ponentes",
     icon: Mic,
     label: "Ponentes",
     sub: "Perfiles y charlas",
-  },
-  {
-    href: "/academia",
-    icon: GraduationCap,
-    label: "Academia",
-    sub: "Contenido grabado",
   },
   { href: "/alianzas", icon: Handshake, label: "Alianzas", sub: "Marketplace" },
   { href: "/comunidad", icon: Users, label: "Comunidad", sub: "Networking" },
@@ -195,7 +171,7 @@ export default async function HomePage() {
 
       {/* Tus espacios: accesos por rol (expositor/ponente/patrocinador/staff)
           y beneficios de tier VIP/Black (Fase 28). */}
-      <RoleSpaces roles={a.roles} ticketTier={a.ticketTier} />
+      <RoleSpaces roles={a.roles} />
 
       <p className="text-caption mb-3 text-brand-dim">Explora la feria</p>
 

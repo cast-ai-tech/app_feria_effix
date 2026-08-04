@@ -81,6 +81,12 @@ export default async function CredencialPage() {
         subtitle="Tu identidad dentro de la feria · escanea para conectar"
         backHref="/"
       />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="credencial"
+        edition={a.currentEdition}
+        className="mb-4"
+      />
       <CredencialClient data={data} />
       {staffStands.length > 0 && (
         <div className="mt-4">
@@ -96,12 +102,6 @@ export default async function CredencialPage() {
         </span>
         <span className="text-brand-muted">›</span>
       </Link>
-      <BannerSlot
-        placement="module_top"
-        moduleKey="credencial"
-        edition={a.currentEdition}
-        className="mt-6"
-      />
     </div>
   );
 }

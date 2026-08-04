@@ -110,6 +110,12 @@ export default async function BeneficiosPage() {
         subtitle="Lo que incluye tu boleta en esta edición"
         backHref="/"
       />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="beneficios"
+        edition={a.currentEdition}
+        className="mb-4"
+      />
 
       {!a.ticketTier || !style ? (
         <GlassCard className="p-5 text-center">
@@ -187,12 +193,6 @@ export default async function BeneficiosPage() {
           )}
         </>
       )}
-      <BannerSlot
-        placement="module_top"
-        moduleKey="beneficios"
-        edition={a.currentEdition}
-        className="mt-6"
-      />
     </div>
   );
 }

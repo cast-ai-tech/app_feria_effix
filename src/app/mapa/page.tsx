@@ -22,13 +22,13 @@ export default async function MapaPage() {
   return (
     <div className="flex flex-col">
       <PageHeader title={TITLE} subtitle={SUBTITLE} backHref="/" />
-      <VenueMap dateRange={formatEditionRange(a.edition)} />
       <BannerSlot
         placement="module_top"
         moduleKey="mapa"
         edition={a.currentEdition}
-        className="mt-6"
+        className="mb-4"
       />
+      <VenueMap dateRange={formatEditionRange(a.edition)} />
     </div>
   );
 }
