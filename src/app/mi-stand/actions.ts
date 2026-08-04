@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendPushToUsers } from "@/lib/push.server";
 
 type Result = { ok: boolean; error?: string };
 
@@ -130,11 +131,31 @@ export async function setMyMeetingStatus(formData: FormData): Promise<Result> {
   }
 
   // La reunión debe pertenecer al stand del staff (no confiar en el form).
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from("stand_meetings")
     .update({ status, slot_note: slotNote || null })
     .eq("id", meetingId)
-    .eq("stand_id", standId);
+    .eq("stand_id", standId)
+    .select("user_id")
+    .maybeSingle();
+
+  if (!error && updated) {
+    const { data: stand } = await admin
+      .from("stands")
+      .select("name")
+      .eq("id", standId)
+      .maybeSingle();
+    const standName = stand?.name ?? "el stand";
+    await sendPushToUsers([updated.user_id], {
+      title:
+        status === "accepted" ? "✅ Cita confirmada" : "Cita no disponible",
+      body:
+        status === "accepted"
+          ? `${standName} aceptó tu cita${slotNote ? ` — ${slotNote}` : ""}.`
+          : `${standName} no pudo agendar tu cita esta vez.`,
+      url: "/stands",
+    });
+  }
 
   revalidatePath("/mi-stand");
   return error ? { ok: false, error: error.message } : { ok: true };

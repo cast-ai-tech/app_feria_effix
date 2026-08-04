@@ -10,7 +10,7 @@ import ListItem from "@/components/ListItem";
 import EmptyState from "@/components/EmptyState";
 import FilterChip from "@/components/FilterChip";
 import { SelectField } from "@/components/Field";
-import { createClient } from "@/lib/supabase/client";
+import { requestMeeting as requestMeetingAction } from "@/app/stands/actions";
 
 export type Stand = {
   id: string;
@@ -124,29 +124,10 @@ export default function StandsClient({
   async function requestMeeting(standId: string) {
     setBusy(true);
     setNote(null);
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setBusy(false);
-      setNote("Inicia sesión para agendar una cita.");
-      return;
-    }
-    const { error } = await supabase.from("stand_meetings").insert({
-      stand_id: standId,
-      user_id: user.id,
-      message: message.trim() || null,
-      intent,
-    });
+    const res = await requestMeetingAction(standId, message, intent);
     setBusy(false);
-    if (error) {
-      // UNIQUE(user_id, stand_id): ya existe una solicitud para este stand.
-      setNote(
-        error.code === "23505"
-          ? "Ya tienes una solicitud con este stand."
-          : `Error: ${error.message}`,
-      );
+    if (!res.ok) {
+      setNote(res.error ?? "No se pudo enviar la solicitud.");
       return;
     }
     setMeetings((r) => ({
