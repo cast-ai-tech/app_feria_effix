@@ -170,27 +170,27 @@ insert into public.speakers
 select * from (values
   ('Camila Restrepo', 'Growth con IA',
    'Growth con IA para e-commerce',
-   timestamptz '2026-10-16 10:00:00-05',
+   timestamptz '2026-10-15 10:00:00-05',
    '@camilarestrepo', 'linkedin.com/in/camilarestrepo', 'camilarestrepo.co', 2026),
 
   ('Andrés Gómez', 'Embajadores y afiliados',
    'Escalar con embajadores y afiliados',
-   timestamptz '2026-10-16 11:15:00-05',
+   timestamptz '2026-10-15 11:15:00-05',
    '@andresgomez', 'linkedin.com/in/andresgomez', null, 2026),
 
   ('Laura Vélez', 'Meta Ads',
    'Meta Ads: lo que cambió en 2026',
-   timestamptz '2026-10-17 12:15:00-05',
+   timestamptz '2026-10-16 12:15:00-05',
    '@lauravelez', 'linkedin.com/in/lauravelez', null, 2026),
 
   ('Sebastián Ríos', 'Ventas de alto ticket',
    'Cierre de ventas de alto ticket',
-   timestamptz '2026-10-17 14:00:00-05',
+   timestamptz '2026-10-16 14:00:00-05',
    '@sebastianrios', 'linkedin.com/in/sebastianrios', 'sebastianrios.com', 2026),
 
   ('Valentina Ortiz', 'Logística y postventa',
    'Logística que enamora al cliente',
-   timestamptz '2026-10-18 09:30:00-05',
+   timestamptz '2026-10-17 09:30:00-05',
    '@valentinaortiz', 'linkedin.com/in/valentinaortiz', null, 2026)
 ) as seed
 where not exists (select 1 from public.speakers);

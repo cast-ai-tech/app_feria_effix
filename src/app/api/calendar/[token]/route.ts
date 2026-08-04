@@ -85,9 +85,11 @@ export async function GET(
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": 'inline; filename="feria-effix-agenda.ics"',
-      // Los clientes de calendario refrescan por su cuenta; una hora de
-      // caché evita hammering sin retrasar cambios de agenda relevantes.
-      "Cache-Control": "public, max-age=3600",
+      // Los clientes de calendario refrescan por su cuenta; 5 min de caché
+      // evitan hammering sin que un cambio de agenda tarde en reflejarse
+      // (con 1h, guardar una charla y refrescar el calendario mostraba la
+      // versión vieja del feed durante hasta una hora).
+      "Cache-Control": "public, max-age=300",
     },
   });
 }
