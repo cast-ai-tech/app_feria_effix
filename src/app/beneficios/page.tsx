@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Image from "next/image";
 import { Check, Crown, MessageCircle } from "lucide-react";
 import GlassCard from "@/components/GlassCard";
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import LockedModule from "@/components/LockedModule";
 import Button from "@/components/Button";
@@ -186,6 +187,12 @@ export default async function BeneficiosPage() {
           )}
         </>
       )}
+      <BannerSlot
+        placement="module_top"
+        moduleKey="beneficios"
+        edition={a.currentEdition}
+        className="mt-6"
+      />
     </div>
   );
 }

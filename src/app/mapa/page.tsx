@@ -1,3 +1,4 @@
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import LockedModule from "@/components/LockedModule";
 import VenueMap from "@/components/mapa/VenueMap";
@@ -22,6 +23,12 @@ export default async function MapaPage() {
     <div className="flex flex-col">
       <PageHeader title={TITLE} subtitle={SUBTITLE} backHref="/" />
       <VenueMap dateRange={formatEditionRange(a.edition)} />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="mapa"
+        edition={a.currentEdition}
+        className="mt-6"
+      />
     </div>
   );
 }

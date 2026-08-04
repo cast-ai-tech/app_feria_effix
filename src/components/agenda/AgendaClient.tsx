@@ -4,7 +4,9 @@ import {
   Ban,
   CalendarDays,
   CalendarPlus,
+  ChevronDown,
   Clock,
+  List,
   Star,
   Trash2,
 } from "lucide-react";
@@ -220,9 +222,9 @@ export default function AgendaClient({
   // por hora — el "calendario de la feria" dentro de la app).
   const [view, setView] = useState<"lista" | "horario">("horario");
   const [auditorium, setAuditorium] = useState<string | null>(null);
-  // Con ~13 auditorios la cuadrícula colapsa a los primeros y un "Ver
-  // todos" — el filtro seleccionado siempre queda visible.
-  const [showAllAuditoriums, setShowAllAuditoriums] = useState(false);
+  // Panel de auditorios (Fase 30): la cuadrícula de colores vive detrás
+  // de UN solo botón selector para no saturar el tope del módulo.
+  const [auditoriumPanelOpen, setAuditoriumPanelOpen] = useState(false);
   const [track, setTrack] = useState<string | null>(null);
   const [updatedBanner, setUpdatedBanner] = useState(false);
   const [justSavedFirst, setJustSavedFirst] = useState(false);
@@ -519,14 +521,42 @@ export default function AgendaClient({
         </div>
       )}
 
-      {/* Tabs Toda / Mía */}
-      <div className="mb-2 flex gap-2">
+      {/* Tabs Toda / Mía + toggle de vista compacto (iconos) a la derecha */}
+      <div className="mb-2 flex items-center gap-2">
         <FilterChip active={tab === "toda"} onClick={() => setTab("toda")}>
           Toda la agenda
         </FilterChip>
         <FilterChip active={tab === "mia"} onClick={() => setTab("mia")}>
           ★ Mi Agenda ({savedIds.size})
         </FilterChip>
+        <div className="ml-auto flex overflow-hidden rounded-full border border-white/20">
+          <button
+            type="button"
+            onClick={() => setView("horario")}
+            aria-label="Vista de horario"
+            className={cn(
+              "flex h-9 w-10 items-center justify-center transition-colors duration-150",
+              view === "horario"
+                ? "bg-brand-white text-black"
+                : "text-brand-muted",
+            )}
+          >
+            <CalendarDays className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("lista")}
+            aria-label="Vista de lista"
+            className={cn(
+              "flex h-9 w-10 items-center justify-center transition-colors duration-150",
+              view === "lista"
+                ? "bg-brand-white text-black"
+                : "text-brand-muted",
+            )}
+          >
+            <List className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
       </div>
 
       {tab === "toda" && (
@@ -537,87 +567,89 @@ export default function AgendaClient({
                 {todayDay === d ? `Hoy · Día ${d}` : `Día ${d}`}
               </FilterChip>
             ))}
-            <span aria-hidden className="my-auto h-5 w-px bg-white/15" />
-            <FilterChip
-              active={view === "horario"}
-              onClick={() => setView("horario")}
-            >
-              Horario
-            </FilterChip>
-            <FilterChip
-              active={view === "lista"}
-              onClick={() => setView("lista")}
-            >
-              Lista
-            </FilterChip>
           </div>
-          {/* Filtro GRÁFICO por auditorio (Fase 30): cuadrícula fija (todos
-              visibles, sin scroll oculto), cada auditorio con el color de
-              su pabellón en el plano del recinto — el mismo color que pinta
-              sus bloques en la vista Horario. */}
+          {/* Selector de auditorio (Fase 30): UN botón compacto — la
+              cuadrícula de colores (identidad del plano del recinto) vive
+              en un panel desplegable para no saturar el tope del módulo. */}
           {auditoriums.length > 1 && (
-            <div className="mb-2 grid grid-cols-2 gap-2">
+            <>
               <button
                 type="button"
-                onClick={() => setAuditorium(null)}
-                className={cn(
-                  "col-span-2 rounded-[12px] border px-3 py-2.5 text-[11px] font-extrabold transition-colors duration-150 active:scale-[0.98]",
-                  !auditorium
-                    ? "border-white bg-brand-white text-black"
-                    : "border-white/20 text-brand-dim",
-                )}
+                onClick={() => setAuditoriumPanelOpen((s) => !s)}
+                aria-expanded={auditoriumPanelOpen}
+                className="mb-2 flex w-full items-center gap-2 rounded-[12px] border border-white/20 px-3.5 py-2.5 text-[11px] font-bold text-brand-white active:scale-[0.99]"
               >
-                Todos los auditorios
+                <span
+                  aria-hidden
+                  className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                  style={{
+                    background: auditorium
+                      ? auditoriumColor(auditorium, auditoriums)
+                      : "#ffffff",
+                  }}
+                />
+                <span className="min-w-0 flex-1 truncate text-left">
+                  {auditorium ?? "Todos los auditorios"}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 flex-shrink-0 text-brand-muted transition-transform duration-150",
+                    auditoriumPanelOpen && "rotate-180",
+                  )}
+                  aria-hidden
+                />
               </button>
-              {(showAllAuditoriums || auditoriums.length <= 6
-                ? auditoriums
-                : [
-                    ...auditoriums.slice(0, 5),
-                    // El seleccionado nunca se esconde detrás del "Ver todos".
-                    ...(auditorium &&
-                    !auditoriums.slice(0, 5).includes(auditorium)
-                      ? [auditorium]
-                      : []),
-                  ]
-              ).map((a) => {
-                const c = auditoriumColor(a, auditoriums);
-                const active = auditorium === a;
-                return (
+
+              {auditoriumPanelOpen && (
+                <div className="mb-2 grid grid-cols-2 gap-2">
                   <button
-                    key={`a-${a}`}
                     type="button"
-                    onClick={() => setAuditorium(active ? null : a)}
+                    onClick={() => {
+                      setAuditorium(null);
+                      setAuditoriumPanelOpen(false);
+                    }}
                     className={cn(
-                      "flex items-center gap-2 rounded-[12px] border px-3 py-2.5 text-left text-[10.5px] font-bold leading-tight transition-colors duration-150 active:scale-[0.98]",
-                      active ? "text-brand-white" : "text-brand-dim",
+                      "col-span-2 rounded-[12px] border px-3 py-2.5 text-[11px] font-extrabold transition-colors duration-150 active:scale-[0.98]",
+                      !auditorium
+                        ? "border-white bg-brand-white text-black"
+                        : "border-white/20 text-brand-dim",
                     )}
-                    style={
-                      active
-                        ? { borderColor: c, backgroundColor: `${c}2e` }
-                        : { borderColor: `${c}55` }
-                    }
                   >
-                    <span
-                      aria-hidden
-                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                      style={{ background: c }}
-                    />
-                    <span className="min-w-0 truncate">{a}</span>
+                    Todos los auditorios
                   </button>
-                );
-              })}
-              {auditoriums.length > 6 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllAuditoriums((s) => !s)}
-                  className="col-span-2 rounded-[12px] border border-dashed border-white/25 px-3 py-2 text-[10.5px] font-bold text-brand-muted active:scale-[0.98]"
-                >
-                  {showAllAuditoriums
-                    ? "Ver menos"
-                    : `Ver los ${auditoriums.length} auditorios`}
-                </button>
+                  {auditoriums.map((a) => {
+                    const c = auditoriumColor(a, auditoriums);
+                    const active = auditorium === a;
+                    return (
+                      <button
+                        key={`a-${a}`}
+                        type="button"
+                        onClick={() => {
+                          setAuditorium(active ? null : a);
+                          setAuditoriumPanelOpen(false);
+                        }}
+                        className={cn(
+                          "flex items-center gap-2 rounded-[12px] border px-3 py-2.5 text-left text-[10.5px] font-bold leading-tight transition-colors duration-150 active:scale-[0.98]",
+                          active ? "text-brand-white" : "text-brand-dim",
+                        )}
+                        style={
+                          active
+                            ? { borderColor: c, backgroundColor: `${c}2e` }
+                            : { borderColor: `${c}55` }
+                        }
+                      >
+                        <span
+                          aria-hidden
+                          className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                          style={{ background: c }}
+                        />
+                        <span className="min-w-0 truncate">{a}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-            </div>
+            </>
           )}
           {tracks.length > 0 && (
             <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-1">
@@ -652,9 +684,9 @@ export default function AgendaClient({
           (post-evento incluido). Sin sincronización externa. */}
       {tab === "mia" && (
         <>
-          <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            {view === "horario" &&
-              miaDates.map((k) => (
+          {view === "horario" && miaDates.length > 0 && (
+            <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              {miaDates.map((k) => (
                 <FilterChip
                   key={k}
                   active={k === effectiveMiaDate}
@@ -665,22 +697,8 @@ export default function AgendaClient({
                     : dateChipLabel(k)}
                 </FilterChip>
               ))}
-            {miaDates.length > 0 && (
-              <span aria-hidden className="my-auto h-5 w-px bg-white/15" />
-            )}
-            <FilterChip
-              active={view === "horario"}
-              onClick={() => setView("horario")}
-            >
-              Horario
-            </FilterChip>
-            <FilterChip
-              active={view === "lista"}
-              onClick={() => setView("lista")}
-            >
-              Lista
-            </FilterChip>
-          </div>
+            </div>
+          )}
 
           {isLoggedIn && !showEventForm && (
             <button

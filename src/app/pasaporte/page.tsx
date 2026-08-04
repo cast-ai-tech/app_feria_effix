@@ -1,3 +1,4 @@
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import LockedModule from "@/components/LockedModule";
 import PasaporteClient, {
@@ -15,7 +16,9 @@ export default async function PasaportePage() {
   const a = await getAccess();
 
   if (!a.configured)
-    return <LockedModule title="Pasaporte" reason="ticket" configured={false} />;
+    return (
+      <LockedModule title="Pasaporte" reason="ticket" configured={false} />
+    );
   if (!a.user) return <LockedModule title="Pasaporte" reason="login" />;
   if (!a.hasCurrentTicket && !a.isAdmin)
     return <LockedModule title="Pasaporte" reason="ticket" />;
@@ -96,6 +99,12 @@ export default async function PasaportePage() {
         backHref="/"
       />
       <PasaporteClient data={data} />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="pasaporte"
+        edition={a.currentEdition}
+        className="mt-6"
+      />
     </div>
   );
 }

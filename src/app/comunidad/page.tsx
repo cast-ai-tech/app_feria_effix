@@ -1,3 +1,4 @@
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import LockedModule from "@/components/LockedModule";
 import { createClient } from "@/lib/supabase/server";
@@ -32,6 +33,12 @@ export default async function ComunidadPage() {
         backHref="/"
       />
       <ComunidadClient members={members} />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="comunidad"
+        edition={a.currentEdition}
+        className="mt-6"
+      />
     </div>
   );
 }

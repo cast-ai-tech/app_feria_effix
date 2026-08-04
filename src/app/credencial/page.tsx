@@ -1,6 +1,7 @@
 import { Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import SupabaseNotice from "@/components/SupabaseNotice";
 import CredencialClient, {
@@ -90,9 +91,17 @@ export default async function CredencialPage() {
         href="/credencial/contactos"
         className="mt-4 flex items-center justify-between rounded-[18px] border border-white/15 bg-white/[0.04] px-5 py-3 text-[12px] font-extrabold text-brand-white"
       >
-        <span className="flex items-center gap-2"><Users className="h-4 w-4" aria-hidden /> Mis contactos Effix</span>
+        <span className="flex items-center gap-2">
+          <Users className="h-4 w-4" aria-hidden /> Mis contactos Effix
+        </span>
         <span className="text-brand-muted">›</span>
       </Link>
+      <BannerSlot
+        placement="module_top"
+        moduleKey="credencial"
+        edition={a.currentEdition}
+        className="mt-6"
+      />
     </div>
   );
 }

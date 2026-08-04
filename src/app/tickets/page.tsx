@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Badge from "@/components/Badge";
 import GlassCard from "@/components/GlassCard";
 import ListItem from "@/components/ListItem";
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import SupabaseNotice from "@/components/SupabaseNotice";
 import TicketQR from "@/components/tickets/TicketQR";
@@ -99,13 +100,23 @@ export default async function TicketsPage() {
 
           <GlassCard className="mt-4 flex flex-col divide-y divide-white/[0.06] p-2">
             <ListItem
-              thumb={<MapPin className="h-[18px] w-[18px] text-brand-white" aria-hidden />}
+              thumb={
+                <MapPin
+                  className="h-[18px] w-[18px] text-brand-white"
+                  aria-hidden
+                />
+              }
               title="Plaza Mayor, Medellín"
               subtitle={formatEditionRange(edition)}
             />
             {hasAcademiaAccess && (
               <ListItem
-                thumb={<GraduationCap className="h-[18px] w-[18px] text-brand-white" aria-hidden />}
+                thumb={
+                  <GraduationCap
+                    className="h-[18px] w-[18px] text-brand-white"
+                    aria-hidden
+                  />
+                }
                 title="Incluye acceso a Academia"
                 subtitle="De por vida, por haber comprado esta boleta"
                 right={<Badge>Permanente</Badge>}
@@ -116,6 +127,12 @@ export default async function TicketsPage() {
       ) : (
         <NoTicket accountEmail={user.email ?? ""} blackWhatsappUrl={blackUrl} />
       )}
+      <BannerSlot
+        placement="module_top"
+        moduleKey="tickets"
+        edition={edition.year}
+        className="mt-6"
+      />
     </div>
   );
 }

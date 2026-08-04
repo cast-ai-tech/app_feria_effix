@@ -89,6 +89,13 @@ const MODULE_OPTIONS = [
   { value: "ponentes", label: "Ponentes" },
   { value: "academia", label: "Academia" },
   { value: "alianzas", label: "Alianzas" },
+  { value: "mapa", label: "Mapa" },
+  { value: "comunidad", label: "Comunidad" },
+  { value: "credencial", label: "Credencial" },
+  { value: "pasaporte", label: "Pasaporte" },
+  { value: "tickets", label: "Mi escarapela" },
+  { value: "notificaciones", label: "Avisos" },
+  { value: "beneficios", label: "Beneficios" },
 ];
 
 const TIER_OPTIONS = [

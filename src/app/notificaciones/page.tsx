@@ -1,3 +1,4 @@
+import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import SupabaseNotice from "@/components/SupabaseNotice";
 import NotificacionesClient, {
@@ -61,6 +62,12 @@ export default async function NotificacionesPage() {
         backHref="/"
       />
       <NotificacionesClient items={items} />
+      <BannerSlot
+        placement="module_top"
+        moduleKey="notificaciones"
+        edition={a.currentEdition}
+        className="mt-6"
+      />
     </div>
   );
 }
