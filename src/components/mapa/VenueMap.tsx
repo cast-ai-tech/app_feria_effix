@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import Badge from "@/components/Badge";
 import GlassCard from "@/components/GlassCard";
-import ListItem from "@/components/ListItem";
 import SectionTitle from "@/components/SectionTitle";
 import PlanimetriaViewer from "@/components/mapa/PlanimetriaViewer";
 import { cn } from "@/lib/cn";
@@ -134,7 +133,9 @@ const ZONES: Zone[] = [
   },
 ];
 
-/** Celda del plano visual (cuadrícula estilizada). */
+/** Celda del plano visual (cuadrícula estilizada, con descripción — la
+ * antigua sección "Detalle de zonas" duplicaba estas mismas zonas en
+ * lista, se fusionó aquí en Fase 30). */
 function MapCell({ zone }: { zone: Zone }) {
   const navigable = !!zone.href;
   return (
@@ -148,7 +149,10 @@ function MapCell({ zone }: { zone: Zone }) {
     >
       <div className="flex items-start justify-between">
         <span className="flex items-center gap-1.5">
-          <zone.icon className="h-[22px] w-[22px] text-brand-white" aria-hidden />
+          <zone.icon
+            className="h-[22px] w-[22px] text-brand-white"
+            aria-hidden
+          />
           {zone.dot && (
             <span
               className={cn("h-2 w-2 rounded-full", zone.dot)}
@@ -156,10 +160,17 @@ function MapCell({ zone }: { zone: Zone }) {
             />
           )}
         </span>
-        <span className="text-[11px] text-brand-dim">{navigable ? "→" : "•"}</span>
+        <span className="text-[11px] text-brand-dim">
+          {navigable ? "→" : "•"}
+        </span>
       </div>
-      <div className="text-[11.5px] font-extrabold leading-tight text-brand-white">
-        {zone.name}
+      <div>
+        <div className="text-[11.5px] font-extrabold leading-tight text-brand-white">
+          {zone.name}
+        </div>
+        <div className="mt-0.5 text-[9.5px] font-medium leading-snug text-brand-dim">
+          {zone.description}
+        </div>
       </div>
     </GlassCard>
   );
@@ -180,26 +191,6 @@ export default function VenueMap({ dateRange }: { dateRange: string }) {
           <MapCell key={z.id} zone={z} />
         ))}
       </div>
-
-      <SectionTitle>Detalle de zonas</SectionTitle>
-      <GlassCard className="flex flex-col divide-y divide-white/[0.06] p-2">
-        {ZONES.map((z) => (
-          <ListItem
-            key={z.id}
-            thumb={<z.icon className="h-[18px] w-[18px] text-brand-white" aria-hidden />}
-            title={z.name}
-            subtitle={z.description}
-            href={z.href}
-            right={
-              z.href ? (
-                <span className="text-[13px] text-brand-dim">→</span>
-              ) : (
-                <span className="text-[10px] font-bold text-brand-dim">Aquí</span>
-              )
-            }
-          />
-        ))}
-      </GlassCard>
 
       <p className="mt-4 text-center text-[10px] font-medium leading-relaxed text-brand-muted">
         Recinto: Plaza Mayor, Medellín · {dateRange}.
