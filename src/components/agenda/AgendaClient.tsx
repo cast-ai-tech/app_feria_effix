@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, CalendarDays, Clock, Star } from "lucide-react";
+import { Ban, CalendarDays, CalendarPlus, Clock, Star } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -170,11 +170,14 @@ export default function AgendaClient({
   edition,
   savedIds: initialSavedIds,
   reminderLeadMinutes,
+  calendarFeedUrl,
 }: {
   talks: Talk[];
   edition: EditionInfo;
   savedIds: string[];
   reminderLeadMinutes: number;
+  /** URL absoluta del feed .ics personal (null sin sesión). */
+  calendarFeedUrl: string | null;
 }) {
   const router = useRouter();
   const DAYS = editionDays(edition);
@@ -444,6 +447,39 @@ export default function AgendaClient({
         <p className="mb-2 text-[10.5px] font-semibold text-amber-300">
           Tienes charlas que se cruzan en horario.
         </p>
+      )}
+
+      {/* Sincronización con el calendario del celular (Fase 30): feed .ics
+          suscribible — el calendario lo refresca solo, sin permisos OAuth. */}
+      {tab === "mia" && calendarFeedUrl && savedIds.size > 0 && (
+        <GlassCard className="mb-2 flex flex-col gap-3 p-4">
+          <p className="flex items-center gap-1.5 text-[12px] font-extrabold text-brand-white">
+            <CalendarPlus className="h-4 w-4" aria-hidden />
+            Sincroniza con el calendario de tu celular
+          </p>
+          <p className="text-[10.5px] leading-relaxed text-brand-muted">
+            Suscríbete una sola vez y tus charlas guardadas aparecen y se
+            actualizan solas en tu calendario (cambios de hora incluidos).
+          </p>
+          <div className="flex gap-2">
+            <a
+              href={calendarFeedUrl.replace(/^https?:\/\//, "webcal://")}
+              className="flex-1 rounded-full border border-white/25 px-4 py-2 text-center text-[10.5px] font-bold text-brand-white active:scale-95"
+            >
+              iPhone / Apple
+            </a>
+            <a
+              href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(
+                calendarFeedUrl.replace(/^https?:\/\//, "webcal://"),
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 rounded-full border border-white/25 px-4 py-2 text-center text-[10.5px] font-bold text-brand-white active:scale-95"
+            >
+              Google Calendar
+            </a>
+          </div>
+        </GlassCard>
       )}
 
       {shown.length === 0 ? (
