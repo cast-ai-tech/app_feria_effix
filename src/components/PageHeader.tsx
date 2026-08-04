@@ -1,32 +1,21 @@
-import Link from "next/link";
-
 type PageHeaderProps = {
   title: string;
   subtitle?: string;
-  /** Muestra flecha de volver hacia esta ruta (ej. "/"). */
+  /**
+   * Obsoleto (Fase 30): la flecha de volver se eliminó — el botón atrás
+   * del teléfono y la casita del BottomNav ya cubren esa navegación. El
+   * prop se conserva para no tocar las ~30 páginas que aún lo pasan.
+   */
   backHref?: string;
 };
 
 /**
- * Encabezado de página — título en Montserrat Black + subtítulo apagado,
- * con flecha de volver opcional. Fiel a `.page-title` / `.page-sub`.
+ * Encabezado de página — título en Montserrat Black + subtítulo apagado.
+ * Fiel a `.page-title` / `.page-sub`.
  */
-export default function PageHeader({
-  title,
-  subtitle,
-  backHref,
-}: PageHeaderProps) {
+export default function PageHeader({ title, subtitle }: PageHeaderProps) {
   return (
     <div className="mb-6">
-      {backHref && (
-        <Link
-          href={backHref}
-          className="mb-4 inline-flex items-center gap-2 text-[16px] font-black text-brand-white"
-          aria-label="Volver"
-        >
-          ←
-        </Link>
-      )}
       <h1 className="text-title text-brand-white">{title}</h1>
       {subtitle && (
         <p className="mt-1 text-[13px] font-medium text-brand-muted">
