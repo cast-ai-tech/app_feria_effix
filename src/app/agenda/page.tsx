@@ -1,23 +1,25 @@
-import { headers } from "next/headers";
 import BannerSlot from "@/components/BannerSlot";
 import PageHeader from "@/components/PageHeader";
 import LockedModule from "@/components/LockedModule";
 import { createClient } from "@/lib/supabase/server";
 import { getAccess } from "@/lib/access";
-import AgendaClient, { type Talk } from "@/components/agenda/AgendaClient";
+import AgendaClient, {
+  type Talk,
+  type UserEvent,
+} from "@/components/agenda/AgendaClient";
 
 export default async function AgendaPage() {
   const a = await getAccess();
 
   // Abierta sin sesión (Fase 30): la programación es pública. Guardar
-  // charlas en Mi Agenda sí exige sesión (lo maneja AgendaClient).
+  // charlas y crear citas en Mi Agenda sí exige sesión.
   if (!a.configured)
     return (
       <LockedModule title="Programación" reason="ticket" configured={false} />
     );
 
   const supabase = await createClient();
-  const [{ data }, savedResult, { data: reminderCfg }, tokenResult] =
+  const [{ data }, savedResult, { data: reminderCfg }, eventsResult] =
     await Promise.all([
       supabase
         .from("talks")
@@ -37,27 +39,17 @@ export default async function AgendaPage() {
         .select("value")
         .eq("key", "reminder_lead_minutes")
         .maybeSingle(),
+      // Citas personales (Fase 30) — RLS: solo las propias.
       a.user
         ? supabase
-            .from("profiles")
-            .select("calendar_token")
-            .eq("id", a.user.id)
-            .maybeSingle()
-        : Promise.resolve({ data: null as { calendar_token: string } | null }),
+            .from("user_events")
+            .select("id,title,starts_at,ends_at,location,notes")
+            .eq("user_id", a.user.id)
+            .order("starts_at")
+        : Promise.resolve({ data: null as UserEvent[] | null }),
     ]);
   const saved = savedResult.data;
   const reminderLeadMinutes = parseInt(reminderCfg?.value ?? "15", 10) || 15;
-
-  // URL absoluta del feed .ics (Fase 30) — host de la request, nunca
-  // hardcodeado, para que funcione igual en local, preview y producción.
-  let calendarFeedUrl: string | null = null;
-  const token = tokenResult.data?.calendar_token;
-  if (token) {
-    const h = await headers();
-    const host = h.get("host");
-    const proto = h.get("x-forwarded-proto") ?? "https";
-    if (host) calendarFeedUrl = `${proto}://${host}/api/calendar/${token}`;
-  }
 
   return (
     <div className="flex flex-col">
@@ -77,7 +69,8 @@ export default async function AgendaPage() {
         edition={a.edition}
         savedIds={(saved ?? []).map((s) => s.talk_id)}
         reminderLeadMinutes={reminderLeadMinutes}
-        calendarFeedUrl={calendarFeedUrl}
+        userEvents={(eventsResult.data ?? []) as UserEvent[]}
+        isLoggedIn={!!a.user}
       />
     </div>
   );

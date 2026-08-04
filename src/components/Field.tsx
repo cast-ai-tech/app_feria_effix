@@ -13,7 +13,7 @@ type BaseProps = {
 };
 
 type InputProps = BaseProps & {
-  type?: "text" | "email" | "password";
+  type?: "text" | "email" | "password" | "date" | "time";
   /** Controlado: pasa value + onChange. Sin ellos, funciona no-controlado
    *  (con defaultValue) para formularios que usan FormData nativo. */
   value?: string;
@@ -37,7 +37,11 @@ export function Field({
 }: InputProps) {
   const controlled =
     value !== undefined
-      ? { value, onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value) }
+      ? {
+          value,
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+            onChange?.(e.target.value),
+        }
       : { defaultValue };
   return (
     <label className={cn("block", className)}>

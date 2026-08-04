@@ -73,9 +73,38 @@ export async function GET(request: Request) {
       .is("reminded_at", null);
   }
 
+  // Citas personales (Fase 30): misma ventana y mecánica que las charlas.
+  const { data: events } = await admin
+    .from("user_events")
+    .select("id,user_id,title,location,starts_at")
+    .is("reminded_at", null)
+    .gte("starts_at", now.toISOString())
+    .lte("starts_at", windowEnd.toISOString());
+
+  for (const ev of events ?? []) {
+    const hora = new Date(ev.starts_at).toLocaleTimeString("es-CO", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "America/Bogota",
+    });
+    const sent = await sendPushToUsers([ev.user_id], {
+      title: "📅 Tu cita empieza pronto",
+      body: `"${ev.title}" — ${hora}${ev.location ? ` · ${ev.location}` : ""}`,
+      url: "/agenda",
+    });
+    reminded += sent;
+
+    await admin
+      .from("user_events")
+      .update({ reminded_at: now.toISOString() })
+      .eq("id", ev.id);
+  }
+
   return NextResponse.json({
     ok: true,
     talks: (talks ?? []).length,
+    events: (events ?? []).length,
     pushed: reminded,
   });
 }

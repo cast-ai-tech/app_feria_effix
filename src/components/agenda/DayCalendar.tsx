@@ -43,11 +43,14 @@ export default function DayCalendar({
   nowMs,
   savedIds,
   onToggleSave,
+  canStar = () => true,
 }: {
   talks: Talk[];
   nowMs: number;
   savedIds: Set<string>;
   onToggleSave: (talk: Talk) => void;
+  /** false para items sin estrella (p. ej. citas personales de Mi Agenda). */
+  canStar?: (talk: Talk) => boolean;
 }) {
   const timed = useMemo(() => talks.filter((t) => !!t.starts_at), [talks]);
 
@@ -200,26 +203,28 @@ export default function DayCalendar({
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => onToggleSave(t)}
-                    aria-label={
-                      saved
-                        ? `Quitar de Mi Agenda: ${t.title}`
-                        : `Guardar en Mi Agenda: ${t.title}`
-                    }
-                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full active:scale-90"
-                  >
-                    <Star
-                      className={cn(
-                        "h-3.5 w-3.5",
+                  {canStar(t) && (
+                    <button
+                      type="button"
+                      onClick={() => onToggleSave(t)}
+                      aria-label={
                         saved
-                          ? "fill-brand-white text-brand-white"
-                          : "text-brand-muted",
-                      )}
-                      aria-hidden
-                    />
-                  </button>
+                          ? `Quitar de Mi Agenda: ${t.title}`
+                          : `Guardar en Mi Agenda: ${t.title}`
+                      }
+                      className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full active:scale-90"
+                    >
+                      <Star
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          saved
+                            ? "fill-brand-white text-brand-white"
+                            : "text-brand-muted",
+                        )}
+                        aria-hidden
+                      />
+                    </button>
+                  )}
                 </div>
               </div>
             );

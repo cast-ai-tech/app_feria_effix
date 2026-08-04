@@ -45,12 +45,19 @@ export async function GET(
     return NextResponse.json({ error: "Token no encontrado" }, { status: 404 });
   }
 
-  const { data: saved } = await admin
-    .from("saved_talks")
-    .select(
-      "talk_id, talks(id,title,description,speaker_name,auditorium,starts_at,ends_at,status)",
-    )
-    .eq("user_id", profile.id);
+  const [{ data: saved }, { data: userEvents }] = await Promise.all([
+    admin
+      .from("saved_talks")
+      .select(
+        "talk_id, talks(id,title,description,speaker_name,auditorium,starts_at,ends_at,status)",
+      )
+      .eq("user_id", profile.id),
+    // Citas personales (Fase 30) — también parte de Mi Agenda.
+    admin
+      .from("user_events")
+      .select("id,title,starts_at,ends_at,location,notes")
+      .eq("user_id", profile.id),
+  ]);
 
   const events: IcsEvent[] = (saved ?? [])
     .map((s) => {
@@ -79,6 +86,17 @@ export async function GET(
       description:
         [t.speaker_name, t.description].filter(Boolean).join(" — ") || null,
     }));
+
+  for (const ev of userEvents ?? []) {
+    events.push({
+      uid: ev.id,
+      title: ev.title,
+      startsAt: ev.starts_at,
+      endsAt: ev.ends_at,
+      location: ev.location,
+      description: ev.notes,
+    });
+  }
 
   const ics = buildCalendar(
     "Feria Effix — Mi Agenda",

@@ -1,17 +1,31 @@
 "use client";
 
-import { Ban, CalendarDays, CalendarPlus, Clock, Star } from "lucide-react";
+import {
+  Ban,
+  CalendarDays,
+  CalendarPlus,
+  Clock,
+  Star,
+  Trash2,
+} from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Badge from "@/components/Badge";
+import Button from "@/components/Button";
 import EmptyState from "@/components/EmptyState";
 import FilterChip from "@/components/FilterChip";
 import GlassCard from "@/components/GlassCard";
 import ListItem from "@/components/ListItem";
 import PushOptIn from "@/components/PushOptIn";
+import { Field, TextAreaField } from "@/components/Field";
 import { cn } from "@/lib/cn";
 import { editionDays, type EditionInfo } from "@/lib/editions";
+import {
+  bogotaDateKey,
+  dateChipLabel,
+  defaultDateKey,
+} from "@/lib/agendaDates";
 import { createClient } from "@/lib/supabase/client";
 import { storage } from "@/lib/platform/storage";
 import { hapticTap } from "@/lib/platform/haptics";
@@ -20,6 +34,7 @@ import {
   scheduleTalkReminder,
   cancelTalkReminder,
 } from "@/lib/platform/notifications";
+import { createUserEvent, deleteUserEvent } from "@/app/agenda/actions";
 
 export type Talk = {
   id: string;
@@ -33,6 +48,16 @@ export type Talk = {
   starts_at: string | null;
   ends_at: string | null;
   status: string;
+};
+
+/** Cita personal (networking/negocios — Fase 30). */
+export type UserEvent = {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  location: string | null;
+  notes: string | null;
 };
 
 const TZ = "America/Bogota";
@@ -171,14 +196,16 @@ export default function AgendaClient({
   edition,
   savedIds: initialSavedIds,
   reminderLeadMinutes,
-  calendarFeedUrl,
+  userEvents,
+  isLoggedIn,
 }: {
   talks: Talk[];
   edition: EditionInfo;
   savedIds: string[];
   reminderLeadMinutes: number;
-  /** URL absoluta del feed .ics personal (null sin sesión). */
-  calendarFeedUrl: string | null;
+  /** Citas personales del usuario (vacío sin sesión). */
+  userEvents: UserEvent[];
+  isLoggedIn: boolean;
 }) {
   const router = useRouter();
   const DAYS = editionDays(edition);
@@ -195,6 +222,19 @@ export default function AgendaClient({
   const [track, setTrack] = useState<string | null>(null);
   const [updatedBanner, setUpdatedBanner] = useState(false);
   const [justSavedFirst, setJustSavedFirst] = useState(false);
+
+  // Mi Agenda (Fase 30): fecha seleccionada (null = automática) y estado
+  // del formulario de nueva cita personal.
+  const [miaDate, setMiaDate] = useState<string | null>(null);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [evTitle, setEvTitle] = useState("");
+  const [evDate, setEvDate] = useState("");
+  const [evStart, setEvStart] = useState("");
+  const [evEnd, setEvEnd] = useState("");
+  const [evLocation, setEvLocation] = useState("");
+  const [evNotes, setEvNotes] = useState("");
+  const [evBusy, setEvBusy] = useState(false);
+  const [evError, setEvError] = useState<string | null>(null);
 
   const savedIdsRef = useRef(savedIds);
   useEffect(() => {
@@ -381,6 +421,84 @@ export default function AgendaClient({
   );
   const conflicts = useMemo(() => findConflicts(savedTalks), [savedTalks]);
 
+  // Citas personales como pseudo-charlas para reusar la vista Horario.
+  // canStar del DayCalendar las excluye de la estrella (no son charlas).
+  const citaIds = useMemo(
+    () => new Set(userEvents.map((e) => e.id)),
+    [userEvents],
+  );
+  const citaTalks: Talk[] = useMemo(
+    () =>
+      userEvents.map((e) => ({
+        id: e.id,
+        title: e.title,
+        description: null,
+        speaker_id: null,
+        speaker_name: e.notes,
+        auditorium: e.location,
+        track: null,
+        day: null,
+        starts_at: e.starts_at,
+        ends_at: e.ends_at,
+        status: "active",
+      })),
+    [userEvents],
+  );
+
+  // Fechas con contenido en Mi Agenda (charlas guardadas + citas), en
+  // fechas reales — post-evento incluido.
+  const miaAll = useMemo(
+    () =>
+      [...savedTalks, ...citaTalks]
+        .filter((t) => !!t.starts_at)
+        .sort((a, b) => a.starts_at!.localeCompare(b.starts_at!)),
+    [savedTalks, citaTalks],
+  );
+  const miaDates = useMemo(
+    () => [...new Set(miaAll.map((t) => bogotaDateKey(t.starts_at!)))],
+    [miaAll],
+  );
+  const effectiveMiaDate =
+    miaDate && miaDates.includes(miaDate)
+      ? miaDate
+      : defaultDateKey(miaDates, todayStr);
+  const miaDayItems = useMemo(
+    () =>
+      miaAll.filter((t) => bogotaDateKey(t.starts_at!) === effectiveMiaDate),
+    [miaAll, effectiveMiaDate],
+  );
+
+  async function handleCreateEvent() {
+    setEvBusy(true);
+    setEvError(null);
+    const fd = new FormData();
+    fd.set("title", evTitle);
+    fd.set("date", evDate);
+    fd.set("start_time", evStart);
+    fd.set("end_time", evEnd);
+    fd.set("location", evLocation);
+    fd.set("notes", evNotes);
+    const res = await createUserEvent(fd);
+    setEvBusy(false);
+    if (!res.ok) {
+      setEvError(res.error ?? "No se pudo crear la cita.");
+      return;
+    }
+    setShowEventForm(false);
+    setEvTitle("");
+    setEvDate("");
+    setEvStart("");
+    setEvEnd("");
+    setEvLocation("");
+    setEvNotes("");
+    router.refresh();
+  }
+
+  async function handleDeleteEvent(id: string) {
+    await deleteUserEvent(id);
+    router.refresh();
+  }
+
   const shown =
     tab === "mia"
       ? savedTalks
@@ -466,77 +584,210 @@ export default function AgendaClient({
         </p>
       )}
 
-      {/* Sincronización con el calendario del celular (Fase 30): feed .ics
-          suscribible — el calendario lo refresca solo, sin permisos OAuth.
-          En Android la suscripción por URL solo se completa desde el sitio
-          de ESCRITORIO de Google Calendar (limitación de Google), por eso
-          la vía principal en el teléfono es "Agregar ahora" (importa el
-          .ics al instante) y la suscripción queda como opción pro. */}
-      {tab === "mia" && calendarFeedUrl && savedIds.size > 0 && (
-        <GlassCard className="mb-2 flex flex-col gap-3 p-4">
-          <p className="flex items-center gap-1.5 text-[12px] font-extrabold text-brand-white">
-            <CalendarPlus className="h-4 w-4" aria-hidden />
-            Lleva tu agenda al calendario del celular
-          </p>
-          <a
-            href={`${calendarFeedUrl}?download=1`}
-            className="rounded-full bg-brand-white px-4 py-2.5 text-center text-[11px] font-extrabold text-black active:scale-95"
-          >
-            Agregar ahora a mi calendario
-          </a>
-          <p className="text-[10px] leading-relaxed text-brand-muted">
-            Descarga tus charlas y ábrelas con tu app de calendario. Si luego
-            guardas más charlas, vuelve a tocar el botón.
-          </p>
-          <p className="text-[10px] font-bold text-brand-dim">
-            ¿Prefieres que se actualice solo? Suscríbete una vez:
-          </p>
-          <div className="flex gap-2">
-            <a
-              href={calendarFeedUrl.replace(/^https?:\/\//, "webcal://")}
-              className="flex-1 rounded-full border border-white/25 px-4 py-2 text-center text-[10.5px] font-bold text-brand-white active:scale-95"
+      {/* Mi Agenda (Fase 30): calendario personal DENTRO de la app —
+          charlas guardadas + citas propias, navegable por fecha real
+          (post-evento incluido). Sin sincronización externa. */}
+      {tab === "mia" && (
+        <>
+          <div className="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            {view === "horario" &&
+              miaDates.map((k) => (
+                <FilterChip
+                  key={k}
+                  active={k === effectiveMiaDate}
+                  onClick={() => setMiaDate(k)}
+                >
+                  {k === todayStr
+                    ? `Hoy · ${dateChipLabel(k)}`
+                    : dateChipLabel(k)}
+                </FilterChip>
+              ))}
+            {miaDates.length > 0 && (
+              <span aria-hidden className="my-auto h-5 w-px bg-white/15" />
+            )}
+            <FilterChip
+              active={view === "horario"}
+              onClick={() => setView("horario")}
             >
-              iPhone / Apple
-            </a>
-            <a
-              href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(
-                calendarFeedUrl.replace(/^https?:\/\//, "webcal://"),
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 rounded-full border border-white/25 px-4 py-2 text-center text-[10.5px] font-bold text-brand-white active:scale-95"
+              Horario
+            </FilterChip>
+            <FilterChip
+              active={view === "lista"}
+              onClick={() => setView("lista")}
             >
-              Google (en computador)
-            </a>
+              Lista
+            </FilterChip>
           </div>
-        </GlassCard>
+
+          {isLoggedIn && !showEventForm && (
+            <button
+              type="button"
+              onClick={() => setShowEventForm(true)}
+              className="mb-2 flex items-center justify-center gap-1.5 rounded-full border border-white/25 px-4 py-2.5 text-[11px] font-extrabold text-brand-white active:scale-95"
+            >
+              <CalendarPlus className="h-4 w-4" aria-hidden />
+              Nueva cita (networking / negocios)
+            </button>
+          )}
+
+          {showEventForm && (
+            <GlassCard className="mb-2 flex flex-col gap-3 p-4">
+              <p className="text-[12px] font-extrabold text-brand-white">
+                Nueva cita
+              </p>
+              <Field
+                label="Título"
+                name="ev_title"
+                value={evTitle}
+                onChange={setEvTitle}
+                placeholder="Reunión con proveedor…"
+              />
+              <Field
+                label="Fecha"
+                name="ev_date"
+                type="date"
+                value={evDate}
+                onChange={setEvDate}
+              />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Field
+                    label="Inicio"
+                    name="ev_start"
+                    type="time"
+                    value={evStart}
+                    onChange={setEvStart}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Field
+                    label="Fin (opcional)"
+                    name="ev_end"
+                    type="time"
+                    value={evEnd}
+                    onChange={setEvEnd}
+                  />
+                </div>
+              </div>
+              <Field
+                label="Lugar (opcional)"
+                name="ev_location"
+                value={evLocation}
+                onChange={setEvLocation}
+                placeholder="Stand 42, café del hall…"
+              />
+              <TextAreaField
+                label="Notas (opcional)"
+                name="ev_notes"
+                value={evNotes}
+                onChange={setEvNotes}
+                placeholder="Con quién, de qué…"
+              />
+              {evError && (
+                <p className="text-[11px] font-semibold text-red-300">
+                  {evError}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  onClick={() => {
+                    setShowEventForm(false);
+                    setEvError(null);
+                  }}
+                  disabled={evBusy}
+                >
+                  Cancelar
+                </Button>
+                <Button fullWidth onClick={handleCreateEvent} disabled={evBusy}>
+                  {evBusy ? "Guardando…" : "Guardar cita"}
+                </Button>
+              </div>
+            </GlassCard>
+          )}
+        </>
       )}
 
-      {shown.length === 0 ? (
+      {tab === "mia" ? (
+        <>
+          {miaAll.length === 0 ? (
+            <div className="mt-3">
+              <EmptyState
+                icon={<Star className="h-6 w-6" aria-hidden />}
+                title="Tu agenda está vacía"
+                subtitle="Guarda charlas con la estrella ☆ o crea una cita de networking — este es tu calendario personal de la feria, durante y después del evento."
+              />
+            </div>
+          ) : view === "horario" ? (
+            <div className="mt-2">
+              <DayCalendar
+                talks={miaDayItems}
+                nowMs={nowMs}
+                savedIds={savedIds}
+                onToggleSave={toggleSave}
+                canStar={(t) => !citaIds.has(t.id)}
+              />
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-col gap-2.5">
+              {savedTalks.map((t) => (
+                <TalkCard
+                  key={t.id}
+                  talk={t}
+                  nowMs={nowMs}
+                  saved={savedIds.has(t.id)}
+                  conflicted={conflicts.has(t.id)}
+                  onToggleSave={toggleSave}
+                />
+              ))}
+              {userEvents.map((e) => (
+                <GlassCard
+                  key={e.id}
+                  className="flex items-center justify-between gap-3 p-4"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[12px] font-extrabold text-brand-white">
+                      {e.title}
+                    </p>
+                    <p className="text-[10px] font-semibold tabular-nums text-brand-muted">
+                      {dateChipLabel(bogotaDateKey(e.starts_at))} ·{" "}
+                      {new Date(e.starts_at).toLocaleTimeString("es-CO", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                        timeZone: TZ,
+                      })}
+                      {e.location ? ` · ${e.location}` : ""}
+                    </p>
+                    {e.notes && (
+                      <p className="truncate text-[10px] text-brand-dim">
+                        {e.notes}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteEvent(e.id)}
+                    aria-label={`Eliminar cita: ${e.title}`}
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/15 text-brand-muted active:scale-90"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </button>
+                </GlassCard>
+              ))}
+            </div>
+          )}
+        </>
+      ) : shown.length === 0 ? (
         <div className="mt-3">
           <EmptyState
-            icon={
-              tab === "mia" ? (
-                <Star className="h-6 w-6" aria-hidden />
-              ) : (
-                <CalendarDays className="h-6 w-6" aria-hidden />
-              )
-            }
-            title={
-              tab === "mia"
-                ? "Tu agenda está vacía"
-                : "Sin charlas para este día"
-            }
-            subtitle={
-              tab === "mia"
-                ? "Toca la estrella ☆ de cualquier charla para armar tu itinerario personal."
-                : "Aún no hay conferencias programadas en la agenda de este día. Vuelve pronto."
-            }
+            icon={<CalendarDays className="h-6 w-6" aria-hidden />}
+            title="Sin charlas para este día"
+            subtitle="Aún no hay conferencias programadas en la agenda de este día. Vuelve pronto."
           />
         </div>
-      ) : tab === "toda" &&
-        view === "horario" &&
-        shown.some((t) => !!t.starts_at) ? (
+      ) : view === "horario" && shown.some((t) => !!t.starts_at) ? (
         <div className="mt-2">
           <DayCalendar
             talks={shown}
@@ -553,7 +804,7 @@ export default function AgendaClient({
               talk={t}
               nowMs={nowMs}
               saved={savedIds.has(t.id)}
-              conflicted={tab === "mia" && conflicts.has(t.id)}
+              conflicted={false}
               onToggleSave={toggleSave}
             />
           ))}
@@ -562,7 +813,7 @@ export default function AgendaClient({
 
       <p className="mt-4 text-center text-[10.5px] font-medium text-brand-muted">
         {tab === "mia"
-          ? "Te recordamos cada charla 15 minutos antes por notificación"
+          ? "Te recordamos charlas y citas 15 minutos antes por notificación"
           : "Toca una charla para ver el detalle del ponente · ☆ la guarda en Mi Agenda"}
       </p>
     </div>
